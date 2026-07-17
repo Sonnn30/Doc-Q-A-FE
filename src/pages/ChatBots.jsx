@@ -48,9 +48,13 @@ export default function ChatBots() {
   const handleSubmit = () => {
     axiosInstance.post("/api/createBot", chatbot_information)
       .then((res) => {
-        toast.success("Chatbot created successfully!")
         const new_id = res.data.id
-        navigate(`/chatbots/${new_id}`)
+
+        return axiosInstance.post(`/api/chat/${new_id}`)
+          .then(() => {
+            toast.success("Chatbot created successfully!")
+            navigate(`/chatbots/${new_id}`)
+          })
       })
       .catch(error => {
         const detail = error.response?.data?.detail

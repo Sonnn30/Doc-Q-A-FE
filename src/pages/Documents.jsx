@@ -22,7 +22,12 @@ export default function Documents() {
     axiosInstance.get(`/api/get-document/${chatbotId}`)
       .then(res => {
         setDocuments(res.data)
-        setIsUpload(res.data.length > 0)   
+        setIsUpload(res.data.length > 0)
+
+        const selectedIds = res.data
+          .filter(doc => doc.selected)
+          .map(doc => doc.id)
+        setCheckedDocs(new Set(selectedIds))
       })
       .catch(err => {
         toast.info("Please add document")
@@ -48,15 +53,24 @@ export default function Documents() {
      })
   }
   const toggleCheck = (docId) => {
-  setCheckedDocs((prev) => {
+    const wasChecked = checkedDocs.has(docId)
+
+    setCheckedDocs((prev) => {
       const updated = new Set(prev)
-      if (updated.has(docId)) {
-        updated.delete(docId)
-      } else {
-        updated.add(docId)
-      }
+      wasChecked ? updated.delete(docId) : updated.add(docId)
       return updated
     })
+
+    axiosInstance.post(`/api/is-document-selected/${docId}`)
+      .catch(err => {
+        toast.error("Failed to update document selection")
+        // rollback kalau request gagal
+        setCheckedDocs((prev) => {
+          const updated = new Set(prev)
+          wasChecked ? updated.add(docId) : updated.delete(docId)
+          return updated
+        })
+      })
   }
 
   const handlePreview = (docId, fileType) => {
