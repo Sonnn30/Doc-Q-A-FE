@@ -49,7 +49,7 @@ export default function Documents() {
       fetchDocuments()
      })
      .catch(err =>{
-      toast.error("Upload Failed")
+      toast.error(err.response?.data?.detail ??"Upload Failed")
      })
   }
   const toggleCheck = (docId) => {
@@ -123,7 +123,7 @@ export default function Documents() {
 
   return (
     <div className='relative flex flex-col gap-6 h-screen'>
-      <div className='flex justify-between items-center border-b-2 border-[#d9d9d9] p-7'>
+      <div className='flex justify-between items-center border-b-2 border-t-2 border-[#d9d9d9] p-7'>
         <div className='flex flex-col gap-1 '>
           <h2 className='font-bold text-xl'>Add documents</h2>
           <p className='font-semibold text-gray-500'>Your chatbot will answer questions based on these documents.</p>

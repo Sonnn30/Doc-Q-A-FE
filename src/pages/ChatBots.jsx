@@ -15,6 +15,11 @@ export default function ChatBots() {
   const navigate = useNavigate()
 
   useEffect(() =>{
+      setChatbotData(null)
+      setName("")
+      setPrompt("")
+      setModel("")
+      setEdit(false)
       if (chatbotId?.startsWith("local-")) {
         toast.info("Please input information about your chatbot")
         return
@@ -46,22 +51,24 @@ export default function ChatBots() {
   }, [isEdit])
 
   const handleSubmit = () => {
-    axiosInstance.post("/api/createBot", chatbot_information)
-      .then((res) => {
-        const new_id = res.data.id
+      axiosInstance.post("/api/createBot", chatbot_information)
+        .then((res) => {
+          const new_id = res.data.id
 
-        return axiosInstance.post(`/api/chat/${new_id}`)
-          .then(() => {
-            toast.success("Chatbot created successfully!")
-            navigate(`/chatbots/${new_id}`)
-          })
-      })
-      .catch(error => {
-        const detail = error.response?.data?.detail
-        const message = Array.isArray(detail) ? detail[0]?.msg : detail
-        toast.error(message ?? "Something went wrong, please try again")
-      })
-  }
+          return axiosInstance.post(`/api/chat/${new_id}`)
+            .then(() => {
+              toast.success("Chatbot created successfully!")
+              setChatbotData(res.data)                     // biar halaman ini langsung update juga
+              window.dispatchEvent(new Event("chatbot-updated")) // biar sidebar ikut refresh
+              navigate(`/chatbots/${new_id}`)                // route ganti ke id asli
+            })
+        })
+        .catch(error => {
+          const detail = error.response?.data?.detail
+          const message = Array.isArray(detail) ? detail[0]?.msg : detail
+          toast.error(message ?? "Something went wrong, please try again")
+        })
+    }
 
   const handleSave = () => {
     axiosInstance.put(`/api/chatbot-update/${chatbotId}`, {
@@ -86,20 +93,29 @@ export default function ChatBots() {
 
   const handleDelete = () => {
     axiosInstance.delete(`/api/chatbot-delete/${chatbotId}`)
-      .then(res => {
-        toast.delete("Chatbot delete successfully")
+      .then(() => {
+        toast.success("Chatbot deleted successfully")
         window.dispatchEvent(new Event("chatbot-updated"))
-        navigate("/")
+        return axiosInstance.get("/api/get-chatbot-by-user_id")
       })
-      .catch(err => {
-        toast.error("Failed delete Chatbot")
+      .then((res) => {
+        const remaining = res.data
+        if (remaining && remaining.length > 0) {
+          const latest = remaining[remaining.length - 1] // chatbot terbaru (asumsi urutan by created_at ascending)
+          navigate(`/chats/${latest.id}`)
+        } else {
+          navigate("/")
+        }
+      })
+      .catch(() => {
+        toast.error("Failed to delete Chatbot")
       })
   }
-  
+    
 
   return (
     <div className='relative flex flex-col gap-6'>
-      <div className='flex justify-between w-full p-7 border-b-2 border-[#d9d9d9]'>
+      <div className='flex justify-between w-full p-7 border-b-2 border-t-2 border-[#d9d9d9]'>
         <div className='flex flex-col gap-1'>
           <h2 className='font-bold text-xl'>General Information</h2>
           <p className='font-semibold text-gray-500'>Add general information about your chatbot.</p>

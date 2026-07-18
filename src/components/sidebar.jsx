@@ -42,6 +42,7 @@ export default function Sidebar() {
         } else {
           setChatbot([...res.data].reverse())
         }
+        setHasAddedLocal(false)
       })
       .catch(err => {
         toast.error("Something Wrong")
@@ -79,21 +80,21 @@ export default function Sidebar() {
 
   return (
     <div className='h-screen'>
-        <div className='flex flex-col items-center h-full w-[320px] bg-white border-2 border-[#d9d9d9] gap-9'>
+        <div className='flex flex-col items-center h-full w-[320px] bg-white border-2 border-[#d9d9d9]'>
           <div className='flex justify-center items-center gap-3 py-5 px-2'>
             <img src="/chat1.svg" alt="chat1" width={40} height={40}/>
             <p className='font-bold text-xl'>DocuSwift</p>
             <img src="/sidebar.svg" alt="sidebar" width={25} height={10} className='ml-20 scale-x-[-1] hover:cursor-pointer'/>
           </div>
-          <div className='flex justify-center items-center border border-[#d9d9d9] w-[85%] h-[45px] gap-2 shadow-md rounded-lg hover:cursor-pointer' onClick={handleNewChatbotClick}>
+          <div className='flex justify-center items-center border border-[#d9d9d9] w-[85%] h-[45px] gap-2 shadow-md rounded-lg hover:cursor-pointer mt-5' onClick={handleNewChatbotClick}>
             <img src="/plus.svg" alt="plus" width={25} height={25}/>
             <p className='font-semibold'>New Chatbot</p>
           </div>
 
-      <div className='flex flex-col items-center gap-3 w-full h-[70%]'>
+      <div className='flex flex-col items-center gap-3 w-full h-[75%] min-h-0 overflow-y-auto mt-9'>
         {chatbot.map((bot) => (
           <React.Fragment key={bot.id} >
-              <div className="flex justify-between items-center w-[270px] h-[50px] px-3 border-2 border-[#d9d9d9] shadow-sm hover:cursor-pointer rounded-xl" onClick={() => setDropDown(prev => ({ ...prev, [bot.id]: !prev[bot.id] }))}>
+              <div className="shrink-0 flex justify-between items-center w-[270px] h-[50px] px-3 border-2 border-[#d9d9d9] shadow-sm hover:cursor-pointer rounded-xl" onClick={() => setDropDown(prev => ({ ...prev, [bot.id]: !prev[bot.id] }))}>
                 <div className='flex items-center gap-4 w-full'>
                   <img src="/chatbot.svg" alt="chat2" width={21} height={21} className='-mt-0.5'/>
                   <p className='font-semibold text-[17px]'>{bot.name}</p>
@@ -149,14 +150,14 @@ export default function Sidebar() {
       </div>
 
 
-          <div className='flex justify-center items-center gap-7 w-full h-20 border-t-2 border-[#d9d9d9] mt-auto'>
+          <div className='flex justify-center items-center gap-7 w-full h-20 border-t-2 border-[#d9d9d9]'>
             <div className='flex items-center gap-4'>
               <div className='flex justify-center items-center w-10 h-10 rounded-full bg-[#e1faed] shadow-sm'>
                 <p className='text-[#27bb88] text-md font-bold'>{FirstLetter(name)}</p>
               </div>
               <div className='flex flex-col w-40'>
                 <p className='font-semibold text-[16px]'>{name}</p>
-                <p className='text-[14px]'>{email}</p>
+                <p className='text-[12px]'>{email}</p>
               </div>
             </div>
             <img src="/logout.svg" alt="logout" width={22} height={22} className='hover:cursor-pointer' onClick={handleLogout}/>
