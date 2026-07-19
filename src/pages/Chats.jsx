@@ -13,6 +13,8 @@ export default function Chats() {
   const [streamingId, setStreamingId] = useState(null)
   const scrollContainerRef = useRef(null)
   const textareaRef = useRef(null)
+  const abortControllerRef = useRef(null)
+  const typewriterIntervalRef = useRef(null)  // NEW: pindah ke ref
   const isLocalChatbot = !chatbotId || chatbotId?.startsWith("local-") || chatbotId === "default"
 
   const scrollToBottom = () => {
@@ -21,9 +23,22 @@ export default function Chats() {
     }
   }
 
+  // NEW: cleanup semua side effect saat ganti chatbot
+  const cleanupStream = () => {
+    abortControllerRef.current?.abort()
+    if (typewriterIntervalRef.current !== null) {
+      clearInterval(typewriterIntervalRef.current)
+      typewriterIntervalRef.current = null
+    }
+    setIsStreaming(false)
+    setStreamingId(null)
+  }
+
   useEffect(() => {
+    cleanupStream()  // CHANGED: pakai cleanupStream
+
     if (isLocalChatbot) {
-      setMessages([])   // pastikan kosong, ga usah fetch apapun
+      setMessages([])
       return
     }
     axiosInstance.get(`/api/get-message/${chatbotId}`)
@@ -36,7 +51,6 @@ export default function Chats() {
       })
   }, [chatbotId])
 
-  // Auto-resize textarea
   const handleInput = (e) => {
     setInputValue(e.target.value)
     const el = textareaRef.current
@@ -54,8 +68,15 @@ export default function Chats() {
     }
   }
 
+  const PLAIN_BOT_MESSAGES = ["Please upload document", "Please Select document"]
+
   const sendBotMessageStream = async () => {
     const botMessageId = `bot-${Date.now()}`
+    const activeChatbotId = chatbotId  // NEW: capture chatbotId saat fungsi dipanggil
+
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
     setIsStreaming(true)
     setStreamingId(botMessageId)
 
@@ -69,13 +90,14 @@ export default function Chats() {
     try {
       const token = sessionStorage.getItem("access_token")
 
-      const response = await fetch(`http://127.0.0.1:8000/api/message/${chatbotId}`, {
+      const response = await fetch(`http://127.0.0.1:8000/api/message/${activeChatbotId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ message: "", sender: "bot" })
+        body: JSON.stringify({ message: "", sender: "bot" }),
+        signal: controller.signal
       })
 
       if (!response.ok || !response.body) throw new Error("Stream response failed")
@@ -90,41 +112,78 @@ export default function Chats() {
       const CHARS_PER_TICK = 7
       const TICK_MS = 10
 
-      const typewriterInterval = setInterval(() => {
-        if (buffer.length === 0) {
-          if (streamDone) {
-            clearInterval(typewriterInterval)
-            setIsStreaming(false)
-            setStreamingId(null)
+      const firstRead = await reader.read()
+      if (firstRead.done) {
+        streamDone = true
+      } else {
+        const firstChunk = decoder.decode(firstRead.value, { stream: true })
+        if (PLAIN_BOT_MESSAGES.includes(firstChunk.trim())) {
+          // NEW: cek apakah masih di chatbot yang sama sebelum update state
+          if (chatbotId === activeChatbotId) {
+            setMessages((prev) =>
+              prev.map((m) => m.id === botMessageId ? { ...m, message: firstChunk.trim() } : m)
+            )
             setTimeout(scrollToBottom, 50)
           }
           return
         }
+        buffer += firstChunk
+      }
 
-        const slice = buffer.slice(0, CHARS_PER_TICK)
-        buffer = buffer.slice(CHARS_PER_TICK)
-        displayedText += slice
-
-        setMessages((prev) =>
-          prev.map((m) => m.id === botMessageId ? { ...m, message: displayedText } : m)
-        )
-
-        scrollToBottom()
-      }, TICK_MS)
-
-      while (true) {
+      while (!streamDone) {
         const { done, value } = await reader.read()
         if (done) { streamDone = true; break }
         const chunkText = decoder.decode(value, { stream: true })
-        if (!chunkText) continue
-        buffer += chunkText
+        if (chunkText) buffer += chunkText
       }
 
+      // NEW: setelah stream selesai, cek dulu apakah user masih di chatbot yang sama
+      if (chatbotId !== activeChatbotId) return
+
+      await new Promise((resolve) => {
+        typewriterIntervalRef.current = setInterval(() => {  // CHANGED: pakai ref
+          // NEW: cek setiap tick apakah masih di chatbot yang sama
+          if (chatbotId !== activeChatbotId) {
+            clearInterval(typewriterIntervalRef.current)
+            typewriterIntervalRef.current = null
+            resolve()
+            return
+          }
+
+          if (buffer.length === 0) {
+            clearInterval(typewriterIntervalRef.current)
+            typewriterIntervalRef.current = null
+            resolve()
+            return
+          }
+
+          const slice = buffer.slice(0, CHARS_PER_TICK)
+          buffer = buffer.slice(CHARS_PER_TICK)
+          displayedText += slice
+
+          setMessages((prev) =>
+            prev.map((m) => m.id === botMessageId ? { ...m, message: displayedText } : m)
+          )
+
+          scrollToBottom()
+        }, TICK_MS)
+      })
+
     } catch (err) {
-      toast.error("Gagal mendapat balasan bot")
-      setMessages((prev) => prev.filter((m) => m.id !== botMessageId))
+      if (err.name !== "AbortError") {
+        toast.error("Gagal mendapat balasan bot")
+        if (chatbotId === activeChatbotId) {  // NEW: hanya hapus message jika masih di chatbot yang sama
+          setMessages((prev) => prev.filter((m) => m.id !== botMessageId))
+        }
+      }
+    } finally {
+      if (typewriterIntervalRef.current !== null) {  // CHANGED: pakai ref
+        clearInterval(typewriterIntervalRef.current)
+        typewriterIntervalRef.current = null
+      }
       setIsStreaming(false)
       setStreamingId(null)
+      setTimeout(scrollToBottom, 50)
     }
   }
 
@@ -156,7 +215,6 @@ export default function Chats() {
 
   return (
     <div className='relative flex flex-col h-screen w-full overflow-hidden'>
-
       <div
         ref={scrollContainerRef}
         className='absolute inset-0 overflow-y-auto flex flex-col items-center'
@@ -199,13 +257,11 @@ export default function Chats() {
       <div className='absolute bottom-0 left-0 w-[99%] bg-white flex justify-center py-5'>
         <div className='w-full max-w-[680px] px-4'>
           <div className='relative w-full flex items-end'>
-
             <textarea
               ref={textareaRef}
               value={inputValue}
               onChange={handleInput}
               onKeyDown={(e) => {
-                // Enter = kirim, Shift+Enter = newline
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault()
                   handleSend()
@@ -217,18 +273,15 @@ export default function Chats() {
               style={{ minHeight: '44px', maxHeight: '160px' }}
               placeholder={isLocalChatbot ? 'Set up your chatbot first before chatting' : 'Ask anything about your documents'}
             />
-
             <div
               className={`absolute right-3 bottom-[4px] flex justify-center items-center bg-[#27bb88] w-9 h-9 rounded-full transition-opacity flex-shrink-0 ${isStreaming || isLocalChatbot ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:opacity-80'}`}
               onClick={handleSend}
             >
               <img src="/send.svg" alt="send" width={18} height={18} />
             </div>
-
           </div>
         </div>
       </div>
-
     </div>
   )
 }

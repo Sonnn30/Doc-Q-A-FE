@@ -11,6 +11,11 @@ export default function Documents() {
   const [preview, setPreview] = useState(false)      
   const [previewData, setPreviewData] = useState(null)
   const [previewLoading, setPreviewLoading] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [allDocuments, setAllDocuments] = useState([])
+  const [currentPage, setCurrentPage] = useState(1)   // NEW
+  const [totalPages, setTotalPages] = useState(1)     // NEW
+  const [limit, setLimit] = useState(10)                                    // NEW
   const fileUpload = useRef(null)
   const { chatbotId } = useParams()
 
@@ -18,26 +23,82 @@ export default function Documents() {
     fileUpload.current.click()
   }
 
-  const fetchDocuments = () => {
-    axiosInstance.get(`/api/get-document/${chatbotId}`)
-      .then(res => {
-        setDocuments(res.data)
-        setIsUpload(res.data.length > 0)
+  const fetchDocuments = (page = 1, customLimit = limit) => {  // NEW: terima customLimit
+      axiosInstance.get(`/api/get-document/${chatbotId}?page=${page}&limit=${customLimit}`)
+        .then(res => {
+          setDocuments(res.data.data)
+          setAllDocuments(res.data.data)
+          setTotalPages(res.data.total_pages)
+          setCurrentPage(res.data.current_page)
+          setIsUpload(res.data.data.length > 0)
 
-        const selectedIds = res.data
-          .filter(doc => doc.selected)
-          .map(doc => doc.id)
-        setCheckedDocs(new Set(selectedIds))
-      })
-      .catch(err => {
-        toast.info("Please add document")
-        setIsUpload(false)
-      })
-  }
+          const selectedIds = res.data.data
+            .filter(doc => doc.selected)
+            .map(doc => doc.id)
+          setCheckedDocs(new Set(selectedIds))
+        })
+        .catch(err => {
+          toast.info("Please add document")
+          setIsUpload(false)
+        })
+    }
 
   useEffect(() => {
     fetchDocuments()
   }, [chatbotId])
+
+  // handle search
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setDocuments(allDocuments)
+      return
+    }
+
+    const timeout = setTimeout(() => {
+      axiosInstance.post(`/api/get-document-by-name/${chatbotId}?page=${currentPage}&limit=${limit}`, { judul: searchQuery })
+        .then(res => {
+          setDocuments(res.data.data)
+          setTotalPages(res.data.total_pages)   // NEW
+          setCurrentPage(res.data.current_page) // NEW
+        })
+        .catch(err => {
+          setDocuments([])
+        })
+    }, 400)
+
+    return () => clearTimeout(timeout)
+  }, [searchQuery])
+
+  // NEW: handle page change
+  const handlePageChange = (page) => {
+    if (searchQuery.trim() === '') {
+      fetchDocuments(page)
+    } else {
+      axiosInstance.post(`/api/get-document-by-name/${chatbotId}?page=${page}&limit=${limit}`, { judul: searchQuery })
+        .then(res => {
+          setDocuments(res.data.data)
+          setTotalPages(res.data.total_pages)
+          setCurrentPage(res.data.current_page)
+        })
+        .catch(err => {
+          setDocuments([])
+        })
+    }
+  }
+  const handleLimitChange = (newLimit) => {
+      setLimit(newLimit)
+      setCurrentPage(1)
+      if (searchQuery.trim() === '') {
+        fetchDocuments(1, newLimit)  // NEW: langsung pass newLimit, tidak bergantung state
+      } else {
+        axiosInstance.post(`/api/get-document-by-name/${chatbotId}?page=1&limit=${newLimit}`, { judul: searchQuery })
+          .then(res => {
+            setDocuments(res.data.data)
+            setTotalPages(res.data.total_pages)
+            setCurrentPage(res.data.current_page)
+          })
+      }
+    }
 
   const handleUpload = (file) => {
     const formData = new FormData()
@@ -52,6 +113,7 @@ export default function Documents() {
       toast.error(err.response?.data?.detail ??"Upload Failed")
      })
   }
+
   const toggleCheck = (docId) => {
     const wasChecked = checkedDocs.has(docId)
 
@@ -64,7 +126,6 @@ export default function Documents() {
     axiosInstance.post(`/api/is-document-selected/${docId}`)
       .catch(err => {
         toast.error("Failed to update document selection")
-        // rollback kalau request gagal
         setCheckedDocs((prev) => {
           const updated = new Set(prev)
           wasChecked ? updated.add(docId) : updated.delete(docId)
@@ -95,8 +156,7 @@ export default function Documents() {
     axiosInstance.delete(`/api/document-delete-by-id/${docId}`)
       .then(res =>{
         setMore(null)
-        fetchDocuments()
-
+        fetchDocuments(currentPage)   // NEW: fetch page yang sama setelah delete
       })
       .catch(err => {
         toast.error("Failed to delete document")
@@ -119,7 +179,6 @@ export default function Documents() {
         toast.error("Failed to download document")
       })
   }
-
 
   return (
     <div className='relative flex flex-col gap-6 h-screen'>
@@ -144,7 +203,13 @@ export default function Documents() {
         <>
           <div className='relative flex w-full px-3'>
             <img src="/search.svg" alt="search" width={35} height={35} className='absolute left-5 top-1/2 -translate-y-1/2 pointer-events-none'/>
-            <input type="text" placeholder='Search documents...' className='border-2 border-[#d9d9d9] placeholder:text-lg pl-12 pr-3 text-lg outline-none w-full h-11 rounded-md'/>
+            <input
+              type="text"
+              placeholder='Search documents...'
+              className='border-2 border-[#d9d9d9] placeholder:text-lg pl-12 pr-3 text-lg outline-none w-full h-11 rounded-md'
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
 
           <div className='flex flex-col px-3'>
@@ -164,12 +229,7 @@ export default function Documents() {
                 </div>
                 {more == "" || more != doc.id ? 
                   <img src="/more.svg" alt="more" width={20} height={20} className='hover:cursor-pointer absolute right-6 z-10' onClick={(e) => { e.stopPropagation(); setMore(doc.id) }}/>
-                
-                
-                
                 : ""
-                
-                
                 }
                 {more == doc.id ? 
                   <div className='absolute right-6 flex flex-col border bg-white w-35 h-27 rounded-lg z-50' onClick={(e) => e.stopPropagation()}>
@@ -186,14 +246,59 @@ export default function Documents() {
                       <img src="/delete.svg" alt="preview" width={20} height={20}/>
                     </div>
                   </div>
-                  
-                  
                   :""
                 }
-
               </div>
             ))}
           </div>
+
+          {/* blok pagination */}
+          {documents.length > 0 && (
+            <div className='flex justify-end items-center gap-2 pt-25 pb-10 px-10'>
+
+              {/* Select limit per page */}
+              <select
+                value={limit}
+                onChange={(e) => handleLimitChange(Number(e.target.value))}
+                className='block w-16 px-3 py-2 border border-[#d9d9d9] text-sm rounded-md focus:ring-[#27bb88] focus:border-[#27bb88]'
+              >
+                <option value={10}>10</option>
+                <option value={15}>15</option>
+                <option value={50}>50</option>
+              </select>
+
+              {/* Current of total pages */}
+              <input
+                type="text"
+                disabled
+                className='bg-gray-100 w-32 border border-[#d9d9d9] text-sm rounded-md px-2.5 py-2 text-gray-400 cursor-not-allowed'
+                placeholder={`${currentPage} of ${totalPages} pages`}
+              />
+
+              {/* Prev button */}
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className='inline-flex items-center justify-center w-9 h-9 border border-[#d9d9d9] rounded-l-md bg-gray-50 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed'
+              >
+                <svg className="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m15 19-7-7 7-7"/>
+                </svg>
+              </button>
+
+              {/* Next button */}
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className='inline-flex items-center justify-center w-9 h-9 border border-[#d9d9d9] rounded-r-md bg-gray-50 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed'
+              >
+                <svg className="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m9 5 7 7-7 7"/>
+                </svg>
+              </button>
+
+            </div>
+          )}
         </>
 
         :
