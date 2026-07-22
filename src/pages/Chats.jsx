@@ -269,7 +269,7 @@ export default function Chats() {
               }}
               disabled={isStreaming || isLocalChatbot}
               rows={1}
-              className='border w-full rounded-2xl pl-4 pr-14 py-[10px] bg-white disabled:opacity-60 outline-none focus:ring-2 focus:ring-[#27bb88]/40 resize-none overflow-hidden leading-[1.5] text-[14px] focus:border-0'
+              className='border w-full rounded-2xl pt-4 sm:pt-3 pl-4 pr-14 py-[10px] bg-white disabled:opacity-60 outline-none focus:ring-2 focus:ring-[#27bb88]/40 resize-none overflow-hidden leading-[1.5] text-[14px] focus:border-0 placeholder:text-[11.3px] sm:placeholder:text-[15px]'
               style={{ minHeight: '44px', maxHeight: '160px' }}
               placeholder={isLocalChatbot ? 'Set up your chatbot first before chatting' : 'Ask anything about your documents'}
             />

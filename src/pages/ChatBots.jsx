@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import axios from 'axios'  
 import axiosInstance from '../axiosInstance';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -11,27 +10,28 @@ export default function ChatBots() {
   const [chatbotdata, setChatbotData] = useState(null)
   const [isEdit, setEdit] = useState(false)
   const [isDelete, setDelete] = useState(false)
-  const {chatbotId} = useParams()
+  const { chatbotId } = useParams()
   const navigate = useNavigate()
 
-  useEffect(() =>{
-      setChatbotData(null)
-      setName("")
-      setPrompt("")
-      setModel("")
-      setEdit(false)
-      if (chatbotId?.startsWith("local-")) {
-        toast.info("Please input information about your chatbot")
-        return
-      }
+  const isLocalChatbot = !chatbotId || chatbotId?.startsWith("local-") || chatbotId === "default"
+
+  useEffect(() => {
+    setChatbotData(null)
+    setName("")
+    setPrompt("")
+    setModel("")
+    setEdit(false)
+
+    if (isLocalChatbot) return
+
     axiosInstance.get(`/api/get-chatbot-by-id/${chatbotId}`)
-      .then(res =>{
-        if(res.data === null){
+      .then(res => {
+        if (res.data === null) {
           toast.info("Please input information about your chatbot")
         }
         setChatbotData(res.data)
       })
-      .catch(err =>{
+      .catch(err => {
         toast.error("Something Wrong")
       })
   }, [chatbotId])
@@ -51,24 +51,23 @@ export default function ChatBots() {
   }, [isEdit])
 
   const handleSubmit = () => {
-      axiosInstance.post("/api/createBot", chatbot_information)
-        .then((res) => {
-          const new_id = res.data.id
-
-          return axiosInstance.post(`/api/chat/${new_id}`)
-            .then(() => {
-              toast.success("Chatbot created successfully!")
-              setChatbotData(res.data)                     // biar halaman ini langsung update juga
-              window.dispatchEvent(new Event("chatbot-updated")) // biar sidebar ikut refresh
-              navigate(`/chatbots/${new_id}`)                // route ganti ke id asli
-            })
-        })
-        .catch(error => {
-          const detail = error.response?.data?.detail
-          const message = Array.isArray(detail) ? detail[0]?.msg : detail
-          toast.error(message ?? "Something went wrong, please try again")
-        })
-    }
+    axiosInstance.post("/api/createBot", chatbot_information)
+      .then((res) => {
+        const new_id = res.data.id
+        return axiosInstance.post(`/api/chat/${new_id}`)
+          .then(() => {
+            toast.success("Chatbot created successfully!")
+            setChatbotData(res.data)
+            window.dispatchEvent(new Event("chatbot-updated"))
+            navigate(`/chatbots/${new_id}`)
+          })
+      })
+      .catch(error => {
+        const detail = error.response?.data?.detail
+        const message = Array.isArray(detail) ? detail[0]?.msg : detail
+        toast.error(message ?? "Something went wrong, please try again")
+      })
+  }
 
   const handleSave = () => {
     axiosInstance.put(`/api/chatbot-update/${chatbotId}`, {
@@ -81,14 +80,14 @@ export default function ChatBots() {
       setEdit(false)
       window.dispatchEvent(new Event("chatbot-updated"))
     }).catch(err => {
-        const detail = err.response?.data?.detail
-        if (Array.isArray(detail)) {
-          const message = detail.map(d => d.msg).join(", ")
-          toast.error(message)
-        } else {
-          toast.error(detail ?? "Something Wrong!")
-        }
-      })
+      const detail = err.response?.data?.detail
+      if (Array.isArray(detail)) {
+        const message = detail.map(d => d.msg).join(", ")
+        toast.error(message)
+      } else {
+        toast.error(detail ?? "Something Wrong!")
+      }
+    })
   }
 
   const handleDelete = () => {
@@ -101,7 +100,7 @@ export default function ChatBots() {
       .then((res) => {
         const remaining = res.data
         if (remaining && remaining.length > 0) {
-          const latest = remaining[remaining.length - 1] // chatbot terbaru (asumsi urutan by created_at ascending)
+          const latest = remaining[remaining.length - 1]
           navigate(`/chats/${latest.id}`)
         } else {
           navigate("/")
@@ -111,7 +110,73 @@ export default function ChatBots() {
         toast.error("Failed to delete Chatbot")
       })
   }
-    
+
+  // Komponen model card supaya tidak duplikasi JSX
+  const ModelCard = ({ modelName, description, selectedModel, onClick }) => {
+    const isSelected = selectedModel === modelName
+    return (
+      <div className='flex gap-2 hover:cursor-pointer' onClick={onClick}>
+        <div className={`flex py-3 px-3 gap-3 w-[99%] h-[110%] border-2 rounded-xl ${isSelected ? "border-[#27bb88] bg-[#e1faef]" : "border-[#d9d9d9]"}`}>
+          <div className={`flex justify-center items-center w-5 h-5 shrink-0 rounded-full ${isSelected ? "bg-[#27bb88]" : "border-2 border-[#d9d9d9]"}`}>
+            {isSelected && <div className='w-2 h-2 shrink-0 bg-white rounded-full'/>}
+          </div>
+          <div className='flex flex-col gap-3 -mt-1'>
+            <p className='font-semibold text-[#5a5959] text-[20px]'>{modelName}</p>
+            <p className='text-[#343434] text-[18px]'>{description}</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const QWEN_DESC = "A high-capacity transformer model featuring a 20 Billion (20B) parameter architecture designed for deep analytical workloads. Engineered specifically for complex, multi-step reasoning and precise instruction following, it excels at structured data extraction, comprehensive text synthesis, and advanced logic parsing. This model offers an optimal balance between massive context handling and computational accuracy, making it the ideal choice for auditing dense legal frameworks, parsing intricate technical documentation, and executing nuanced semantic searches across large document repositories"
+  const LLAMA_DESC = "Powered by Meta's state-of-the-art Llama 3.1 8B architecture, this model is highly optimized for rapid, real-time inference. It boasts an expansive 128K token context window, allowing it to digest and process entire multi-page documents within a single prompt. By utilizing Grouped-Query Attention (GQA), it achieves ultra-low latency and maximum memory efficiency. This makes it exceptionally well-suited for high-throughput Retrieval-Augmented Generation (RAG) pipelines, interactive document Q&A, and fast-streaming conversational interfaces"
+
+  // Tampilan saat chatbot masih local/default
+  if (isLocalChatbot) {
+    return (
+      <div className='relative flex flex-col gap-6'>
+        <div className='flex justify-between w-full p-7 border-b-2 border-t-2 border-[#d9d9d9]'>
+          <div className='flex flex-col gap-1'>
+            <h2 className='font-bold '>General Information</h2>
+            <p className='font-semibold text-gray-500'>Add general information about your chatbot.</p>
+          </div>
+        </div>
+        <div className='flex gap-8 px-7'>
+          <div className='w-full flex flex-col gap-2'>
+            <p className='font-bold text-[#5a5959] text-xl'>Name</p>
+            <input type="text" value={name} className='w-full h-10 border-2 border-[#d9d9d9] p-3 rounded-lg' onChange={(e) => setName(e.target.value)}/>
+          </div>
+        </div>
+        <div className='flex flex-col px-7 gap-2'>
+          <p className='text-[#5a5959] font-bold text-xl'>Prompt</p>
+          <textarea value={prompt} className='w-full h-60 border-2 border-[#d9d9d9] p-2 rounded-lg' onChange={(e) => setPrompt(e.target.value)}/>
+        </div>
+        <div className='px-7 -mb-2'>
+          <p className='font-bold text-[#5a5959] text-xl'>AI Model</p>
+        </div>
+        <div className='flex gap-3 px-7'>
+          <ModelCard
+            modelName="Openai/gpt-oss-20b"
+            description={QWEN_DESC}
+            selectedModel={model}
+            onClick={() => setModel(model === "Openai/gpt-oss-20b" ? null : "Openai/gpt-oss-20b")}
+          />
+          <ModelCard
+            modelName="llama-3.1-8b-instant"
+            description={LLAMA_DESC}
+            selectedModel={model}
+            onClick={() => setModel(model === "llama-3.1-8b-instant" ? null : "llama-3.1-8b-instant")}
+          />
+        </div>
+        <div className='flex justify-end pr-10 pt-5 pb-4'>
+          <button className='flex justify-center items-center w-35 h-10 bg-[#27bb88] rounded-md text-[15px] text-white font-semibold hover:cursor-pointer' onClick={handleSubmit}>
+            Create chatbot
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className='relative flex flex-col gap-6'>
@@ -120,44 +185,29 @@ export default function ChatBots() {
           <h2 className='font-bold text-xl'>General Information</h2>
           <p className='font-semibold text-gray-500'>Add general information about your chatbot.</p>
         </div>
-        {chatbotdata != null 
-        
-          ? 
+        {chatbotdata != null &&
           <img src="/edit.svg" alt="edit" width={20} height={20} className='hover:cursor-pointer' onClick={() => setEdit(!isEdit)}/>
-          : 
-          <></>
-        
         }
-
       </div>
       <div className='flex gap-8 px-7'>
         <div className='w-full flex flex-col gap-2'>
           <p className='font-bold text-[#5a5959] text-xl'>Name</p>
           {chatbotdata != null && !isEdit
-            ? 
-            
+            ?
             <p className='flex items-center text-md font-semibold w-full h-10 border-2 border-[#d9d9d9] p-3 rounded-lg'>{chatbotdata.name}</p>
-            
-            : 
-            
+            :
             <input type="text" value={name} className='w-full h-10 border-2 border-[#d9d9d9] p-3 rounded-lg' onChange={(e) => setName(e.target.value)}/>
-            
           }
         </div>
       </div>
       <div className='flex flex-col px-7 gap-2'>
-        <div className='flex gap-1'>
-          <p className='text-[#5a5959] font-bold text-xl'>Prompt</p>
-        </div>
+        <p className='text-[#5a5959] font-bold text-xl'>Prompt</p>
         <div>
           {chatbotdata != null && !isEdit
-          
-            ? 
+            ?
             <p className='w-full h-60 border-2 border-[#d9d9d9] p-2 rounded-lg text-md font-semibold'>{chatbotdata.prompt}</p>
-
-            : 
+            :
             <textarea name="desc" id="desc" value={prompt} className='w-full h-60 border-2 border-[#d9d9d9] p-2 rounded-lg' onChange={(e) => setPrompt(e.target.value)}/>
-            
           }
         </div>
       </div>
@@ -166,133 +216,30 @@ export default function ChatBots() {
       </div>
       <div className='flex gap-3 px-7'>
         {chatbotdata != null && !isEdit
-        
-          ? 
+          ?
           <>
-          
-          <div className='flex gap-2'>
-
-              {chatbotdata.model == "qwen/qwen3.6-27b" 
-                ? 
-                <div className='flex py-5 px-3 gap-3 w-[99%] h-[110%] border-2 border-[#27bb88] rounded-xl bg-[#e1faef]' >
-                  <div className='flex justify-center items-center w-5 h-5 shrink-0 rounded-full bg-[#27bb88]'>
-                    {/* buletan */}
-                    <div className='w-2 h-2 shrink-0 bg-white rounded-full'>
-
-                    </div>
-                  </div>
-                  <div className='flex flex-col gap-3 -mt-1'>
-                    <p className='font-semibold text-[#5a5959] text-[20px]'>qwen/qwen3.6-27b</p>
-                    <p className='text-[#343434] text-[20px]'>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Inventore deleniti provident rerum natus itaque quod, explicabo aspernatur ducimus minus, facilis nesciunt maxime quasi fugit voluptatum corporis unde! Non beatae unde rem quidem doloremque amet expedita aliquid, quo labore rerum officia!</p>
-                  </div>
-                </div>
-                :
-                <div className='flex  py-5 px-3 gap-3 w-[99%] h-[110%] border-2 border-[#d9d9d9] rounded-xl'>
-                  <div className='w-5 h-5 shrink-0 rounded-full border-2 border-[#d9d9d9] '>
-                    {/* buletan */}
-                  </div>
-                  <div className='flex flex-col gap-3 -mt-1'>
-                    <p className='font-semibold text-[#5a5959] text-[20px]'>qwen/qwen3.6-27b</p>
-                    <p className='text-[#343434] text-[20px]'>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Inventore deleniti provident rerum natus itaque quod, explicabo aspernatur ducimus minus, facilis nesciunt maxime quasi fugit voluptatum corporis unde! Non beatae unde rem quidem doloremque amet expedita aliquid, quo labore rerum officia!</p>
-                  </div>
-                </div>
-              }
-            </div>
-            <div className='flex gap-2'>
-              {chatbotdata.model == "llama-3.1-8b-instant"
-                ?
-                  <div className='flex py-5 px-3 gap-3 w-[99%] h-[110%] border-2 border-[#27bb88] rounded-xl bg-[#e1faef]'>
-                    <div className='flex justify-center items-center w-5 h-5 shrink-0 rounded-full bg-[#27bb88]'>
-                      {/* buletan */}
-                      <div className='w-2 h-2 shrink-0 bg-white rounded-full'>
-
-                      </div>
-                    </div>
-                    <div className='flex flex-col gap-3 -mt-1'>
-                      <p className='font-semibold text-[#5a5959] text-[20px]'>llama-3.1-8b-instant</p>
-                      <p className='text-[#343434] text-[20px]'>Lorem ipsum dolor sit amet consectetur adipisicing elit. Ipsa, dicta veritatis, esse commodi cumque animi voluptatibus, veniam eaque omnis consequuntur optio. Veritatis saepe sint molestias amet doloribus consequuntur. Quis ab ducimus, ratione quidem enim voluptatibus veritatis rerum neque a praesentium!</p>
-                    </div>
-                  </div>
-                :
-                <div className='flex py-5 px-3 gap-3 w-[99%] h-[110%] border-2 border-[#d9d9d9] rounded-xl'>
-                  <div className='w-5 h-5 shrink-0 rounded-full border-2 border-[#d9d9d9] '>
-                    {/* buletan */}
-                  </div>
-                  <div className='flex flex-col gap-3 -mt-1'>
-                    <p className='font-semibold text-[#5a5959] text-[20px]'>llama-3.1-8b-instant</p>
-                    <p className='text-[#343434] text-[20px]'>Lorem ipsum dolor sit amet consectetur adipisicing elit. Ipsa, dicta veritatis, esse commodi cumque animi voluptatibus, veniam eaque omnis consequuntur optio. Veritatis saepe sint molestias amet doloribus consequuntur. Quis ab ducimus, ratione quidem enim voluptatibus veritatis rerum neque a praesentium!</p>
-                  </div>
-                </div>
-              }
-            </div>
+            <ModelCard modelName="Openai/gpt-oss-20b" description={QWEN_DESC} selectedModel={chatbotdata.model} onClick={() => {}}/>
+            <ModelCard modelName="llama-3.1-8b-instant" description={LLAMA_DESC} selectedModel={chatbotdata.model} onClick={() => {}}/>
           </>
-          
-          : 
-
+          :
           <>
-          
-            <div className='flex gap-2 hover:cursor-pointer' onClick={() => setModel(model === "qwen/qwen3.6-27b" ? null : "qwen/qwen3.6-27b")}>
-
-              {model == "qwen/qwen3.6-27b" 
-                ? 
-                <div className='flex py-5 px-3 gap-3 w-[99%] h-[110%] border-2 border-[#27bb88] rounded-xl bg-[#e1faef]' >
-                  <div className='flex justify-center items-center w-5 h-5 shrink-0 rounded-full bg-[#27bb88]'>
-                    {/* buletan */}
-                    <div className='w-2 h-2 shrink-0 bg-white rounded-full'>
-
-                    </div>
-                  </div>
-                  <div className='flex flex-col gap-3 -mt-1'>
-                    <p className='font-semibold text-[#5a5959] text-[20px]'>qwen/qwen3.6-27b</p>
-                    <p className='text-[#343434] text-[20px]'>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Inventore deleniti provident rerum natus itaque quod, explicabo aspernatur ducimus minus, facilis nesciunt maxime quasi fugit voluptatum corporis unde! Non beatae unde rem quidem doloremque amet expedita aliquid, quo labore rerum officia!</p>
-                  </div>
-                </div>
-                :
-                <div className='flex  py-5 px-3 gap-3 w-[99%] h-[110%] border-2 border-[#d9d9d9] rounded-xl'>
-                  <div className='w-5 h-5 shrink-0 rounded-full border-2 border-[#d9d9d9] '>
-                    {/* buletan */}
-                  </div>
-                  <div className='flex flex-col gap-3 -mt-1'>
-                    <p className='font-semibold text-[#5a5959] text-[20px]'>qwen/qwen3.6-27b</p>
-                    <p className='text-[#343434] text-[20px]'>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Inventore deleniti provident rerum natus itaque quod, explicabo aspernatur ducimus minus, facilis nesciunt maxime quasi fugit voluptatum corporis unde! Non beatae unde rem quidem doloremque amet expedita aliquid, quo labore rerum officia!</p>
-                  </div>
-                </div>
-              }
-            </div>
-            <div className='flex gap-2 hover:cursor-pointer' onClick={() => setModel(model === "llama-3.1-8b-instant" ? null : "llama-3.1-8b-instant")}>
-              {model == "llama-3.1-8b-instant"
-                ?
-                  <div className='flex py-5 px-3 gap-3 w-[99%] h-[110%] border-2 border-[#27bb88] rounded-xl bg-[#e1faef]'>
-                    <div className='flex justify-center items-center w-5 h-5 shrink-0 rounded-full bg-[#27bb88]'>
-                      {/* buletan */}
-                      <div className='w-2 h-2 shrink-0 bg-white rounded-full'>
-
-                      </div>
-                    </div>
-                    <div className='flex flex-col gap-3 -mt-1'>
-                      <p className='font-semibold text-[#5a5959] text-[20px]'>llama-3.1-8b-instant</p>
-                      <p className='text-[#343434] text-[20px]'>Lorem ipsum dolor sit amet consectetur adipisicing elit. Ipsa, dicta veritatis, esse commodi cumque animi voluptatibus, veniam eaque omnis consequuntur optio. Veritatis saepe sint molestias amet doloribus consequuntur. Quis ab ducimus, ratione quidem enim voluptatibus veritatis rerum neque a praesentium!</p>
-                    </div>
-                  </div>
-                :
-                <div className='flex py-5 px-3 gap-3 w-[99%] h-[110%] border-2 border-[#d9d9d9] rounded-xl'>
-                  <div className='w-5 h-5 shrink-0 rounded-full border-2 border-[#d9d9d9] '>
-                    {/* buletan */}
-                  </div>
-                  <div className='flex flex-col gap-3 -mt-1'>
-                    <p className='font-semibold text-[#5a5959] text-[20px]'>llama-3.1-8b-instant</p>
-                    <p className='text-[#343434] text-[20px]'>Lorem ipsum dolor sit amet consectetur adipisicing elit. Ipsa, dicta veritatis, esse commodi cumque animi voluptatibus, veniam eaque omnis consequuntur optio. Veritatis saepe sint molestias amet doloribus consequuntur. Quis ab ducimus, ratione quidem enim voluptatibus veritatis rerum neque a praesentium!</p>
-                  </div>
-                </div>
-              }
-            </div>
-          
+            <ModelCard
+              modelName="Openai/gpt-oss-20b"
+              description={QWEN_DESC}
+              selectedModel={model}
+              onClick={() => setModel(model === "Openai/gpt-oss-20b" ? null : "Openai/gpt-oss-20b")}
+            />
+            <ModelCard
+              modelName="llama-3.1-8b-instant"
+              description={LLAMA_DESC}
+              selectedModel={model}
+              onClick={() => setModel(model === "llama-3.1-8b-instant" ? null : "llama-3.1-8b-instant")}
+            />
           </>
-          
         }
       </div>
       <div className='flex justify-end pr-10 pt-7 pb-4'>
-        {chatbotdata == null 
+        {chatbotdata == null
           ? (
             <button className='flex justify-center items-center w-35 h-10 bg-[#27bb88] rounded-md text-[15px] text-white font-semibold hover:cursor-pointer' onClick={handleSubmit}>
               Create chatbot
@@ -313,7 +260,7 @@ export default function ChatBots() {
           )
         }
       </div>
-      {isDelete && 
+      {isDelete &&
         <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col gap-9 justify-center items-center w-150 h-100 bg-white border-2 border-red-300 shadow-xl rounded-2xl'>
           <div className='flex justify-center items-center bg-red-100 w-18 h-18 rounded-xl'>
             <img src="/delete.svg" alt="delete" width={40} height={40}/>
@@ -331,7 +278,6 @@ export default function ChatBots() {
             </button>
           </div>
         </div>
-      
       }
     </div>
   )

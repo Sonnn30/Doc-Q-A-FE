@@ -13,41 +13,43 @@ export default function Documents() {
   const [previewLoading, setPreviewLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [allDocuments, setAllDocuments] = useState([])
-  const [currentPage, setCurrentPage] = useState(1)   // NEW
-  const [totalPages, setTotalPages] = useState(1)     // NEW
-  const [limit, setLimit] = useState(10)                                    // NEW
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [limit, setLimit] = useState(10)
   const fileUpload = useRef(null)
   const { chatbotId } = useParams()
+
+  const isLocalChatbot = !chatbotId || chatbotId?.startsWith("local-") || chatbotId === "default"
 
   const handleFileUpload = () => {
     fileUpload.current.click()
   }
 
-  const fetchDocuments = (page = 1, customLimit = limit) => {  // NEW: terima customLimit
-      axiosInstance.get(`/api/get-document/${chatbotId}?page=${page}&limit=${customLimit}`)
-        .then(res => {
-          setDocuments(res.data.data)
-          setAllDocuments(res.data.data)
-          setTotalPages(res.data.total_pages)
-          setCurrentPage(res.data.current_page)
-          setIsUpload(res.data.data.length > 0)
+  const fetchDocuments = (page = 1, customLimit = limit) => {
+    axiosInstance.get(`/api/get-document/${chatbotId}?page=${page}&limit=${customLimit}`)
+      .then(res => {
+        setDocuments(res.data.data)
+        setAllDocuments(res.data.data)
+        setTotalPages(res.data.total_pages)
+        setCurrentPage(res.data.current_page)
+        setIsUpload(res.data.data.length > 0)
 
-          const selectedIds = res.data.data
-            .filter(doc => doc.selected)
-            .map(doc => doc.id)
-          setCheckedDocs(new Set(selectedIds))
-        })
-        .catch(err => {
-          toast.info("Please add document")
-          setIsUpload(false)
-        })
-    }
+        const selectedIds = res.data.data
+          .filter(doc => doc.selected)
+          .map(doc => doc.id)
+        setCheckedDocs(new Set(selectedIds))
+      })
+      .catch(err => {
+        toast.info("Please add document")
+        setIsUpload(false)
+      })
+  }
 
   useEffect(() => {
+    if (isLocalChatbot) return
     fetchDocuments()
   }, [chatbotId])
 
-  // handle search
   useEffect(() => {
     if (searchQuery.trim() === '') {
       setDocuments(allDocuments)
@@ -58,8 +60,8 @@ export default function Documents() {
       axiosInstance.post(`/api/get-document-by-name/${chatbotId}?page=${currentPage}&limit=${limit}`, { judul: searchQuery })
         .then(res => {
           setDocuments(res.data.data)
-          setTotalPages(res.data.total_pages)   // NEW
-          setCurrentPage(res.data.current_page) // NEW
+          setTotalPages(res.data.total_pages)
+          setCurrentPage(res.data.current_page)
         })
         .catch(err => {
           setDocuments([])
@@ -69,7 +71,6 @@ export default function Documents() {
     return () => clearTimeout(timeout)
   }, [searchQuery])
 
-  // NEW: handle page change
   const handlePageChange = (page) => {
     if (searchQuery.trim() === '') {
       fetchDocuments(page)
@@ -85,33 +86,34 @@ export default function Documents() {
         })
     }
   }
+
   const handleLimitChange = (newLimit) => {
-      setLimit(newLimit)
-      setCurrentPage(1)
-      if (searchQuery.trim() === '') {
-        fetchDocuments(1, newLimit)  // NEW: langsung pass newLimit, tidak bergantung state
-      } else {
-        axiosInstance.post(`/api/get-document-by-name/${chatbotId}?page=1&limit=${newLimit}`, { judul: searchQuery })
-          .then(res => {
-            setDocuments(res.data.data)
-            setTotalPages(res.data.total_pages)
-            setCurrentPage(res.data.current_page)
-          })
-      }
+    setLimit(newLimit)
+    setCurrentPage(1)
+    if (searchQuery.trim() === '') {
+      fetchDocuments(1, newLimit)
+    } else {
+      axiosInstance.post(`/api/get-document-by-name/${chatbotId}?page=1&limit=${newLimit}`, { judul: searchQuery })
+        .then(res => {
+          setDocuments(res.data.data)
+          setTotalPages(res.data.total_pages)
+          setCurrentPage(res.data.current_page)
+        })
     }
+  }
 
   const handleUpload = (file) => {
     const formData = new FormData()
     formData.append("file", file)
 
-    axiosInstance.post(`/api/chatbot/${chatbotId}/upload-document`, formData, {headers: { "Content-Type": "multipart/form-data" }})
-     .then(res => {
-      toast.success("file uploaded")
-      fetchDocuments()
-     })
-     .catch(err =>{
-      toast.error(err.response?.data?.detail ??"Upload Failed")
-     })
+    axiosInstance.post(`/api/chatbot/${chatbotId}/upload-document`, formData, { headers: { "Content-Type": "multipart/form-data" } })
+      .then(res => {
+        toast.success("file uploaded")
+        fetchDocuments()
+      })
+      .catch(err => {
+        toast.error(err.response?.data?.detail ?? "Upload Failed")
+      })
   }
 
   const toggleCheck = (docId) => {
@@ -154,9 +156,9 @@ export default function Documents() {
 
   const handleDelete = (docId) => {
     axiosInstance.delete(`/api/document-delete-by-id/${docId}`)
-      .then(res =>{
+      .then(res => {
         setMore(null)
-        fetchDocuments(currentPage)   // NEW: fetch page yang sama setelah delete
+        fetchDocuments(currentPage)
       })
       .catch(err => {
         toast.error("Failed to delete document")
@@ -180,21 +182,41 @@ export default function Documents() {
       })
   }
 
+  // Tampilan saat chatbot masih default
+  if (isLocalChatbot) {
+    return (
+      <div className='relative flex flex-col gap-6 h-screen'>
+        <div className='flex justify-between items-center border-b-2 border-t-2 border-[#d9d9d9] p-7'>
+          <div className='flex flex-col gap-1'>
+            <h2 className='font-bold text-xl'>Add documents</h2>
+            <p className='font-semibold text-gray-500'>Your chatbot will answer questions based on these documents.</p>
+          </div>
+        </div>
+        <div className='flex flex-col h-full justify-center items-center gap-3'>
+          <img src="/docs.svg" alt="docs" width={150} height={150}/>
+          <p className='text-center font-semibold text-gray-400'>
+            Please set up your chatbot first<br />before adding documents
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className='relative flex flex-col gap-6 h-screen'>
       <div className='flex justify-between items-center border-b-2 border-t-2 border-[#d9d9d9] p-7'>
-        <div className='flex flex-col gap-1 '>
+        <div className='flex flex-col gap-1'>
           <h2 className='font-bold text-xl'>Add documents</h2>
           <p className='font-semibold text-gray-500'>Your chatbot will answer questions based on these documents.</p>
         </div>
         {isUpload && 
-        <>
+          <>
             <input type="file" ref={fileUpload} className="hidden" accept='.pdf, .docx, .pptx, .xlsx' onChange={(e) => handleUpload(e.target.files[0])}/>
             <div className='flex justify-center items-center border-2 border-[#d9d9d9] w-46 h-9 rounded-lg shadow-md hover:cursor-pointer hover:bg-gray-100' onClick={handleFileUpload}>
               <img src="/plus.svg" alt="plus" width={25} height={25}/>
               <p className='font-semibold text-[15px]'>Add new document</p>
             </div>
-        </>
+          </>
         }
       </div>
       {
@@ -233,7 +255,7 @@ export default function Documents() {
                 }
                 {more == doc.id ? 
                   <div className='absolute right-6 flex flex-col border bg-white w-35 h-27 rounded-lg z-50' onClick={(e) => e.stopPropagation()}>
-                    <div className='flex items-center justify-between border-b px-2 h-9 hover:cursor-pointer' onClick={(e) => {e.stopPropagation();handlePreview(doc.id, doc.file_type)}}>
+                    <div className='flex items-center justify-between border-b px-2 h-9 hover:cursor-pointer' onClick={(e) => { e.stopPropagation(); handlePreview(doc.id, doc.file_type) }}>
                       <p>Preview</p>
                       <img src="/preview.svg" alt="preview" width={20} height={20}/>
                     </div>
@@ -246,17 +268,14 @@ export default function Documents() {
                       <img src="/delete.svg" alt="preview" width={20} height={20}/>
                     </div>
                   </div>
-                  :""
+                  : ""
                 }
               </div>
             ))}
           </div>
 
-          {/* blok pagination */}
           {documents.length > 0 && (
             <div className='flex justify-end items-center gap-2 pt-25 pb-10 px-10'>
-
-              {/* Select limit per page */}
               <select
                 value={limit}
                 onChange={(e) => handleLimitChange(Number(e.target.value))}
@@ -267,7 +286,6 @@ export default function Documents() {
                 <option value={50}>50</option>
               </select>
 
-              {/* Current of total pages */}
               <input
                 type="text"
                 disabled
@@ -275,7 +293,6 @@ export default function Documents() {
                 placeholder={`${currentPage} of ${totalPages} pages`}
               />
 
-              {/* Prev button */}
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
@@ -286,7 +303,6 @@ export default function Documents() {
                 </svg>
               </button>
 
-              {/* Next button */}
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
@@ -296,11 +312,9 @@ export default function Documents() {
                   <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m9 5 7 7-7 7"/>
                 </svg>
               </button>
-
             </div>
           )}
         </>
-
         :
         <div className='flex flex-col h-full justify-center items-center gap-3'>
           <img src="/docs.svg" alt="docs" width={150} height={150}/>
@@ -312,13 +326,13 @@ export default function Documents() {
             >
               Add document
             </label>
-              <input 
-                id="file-upload" 
-                type="file" 
-                className="hidden" 
-                accept=".pdf, .docx, .pptx, .xlsx"
-                onChange={(e) => handleUpload(e.target.files[0])}
-              />
+            <input 
+              id="file-upload" 
+              type="file" 
+              className="hidden" 
+              accept=".pdf, .docx, .pptx, .xlsx"
+              onChange={(e) => handleUpload(e.target.files[0])}
+            />
           </div>
         </div>
       }
@@ -339,25 +353,13 @@ export default function Documents() {
             {previewLoading ? (
               <p className='text-gray-500'>Loading preview...</p>
             ) : previewData ? (
-                  previewData.file_type === 'pdf' ? (
-                    <iframe
-                      src={previewData.url}
-                      className="w-full h-full rounded-xl"
-                      title="preview"
-                    />
-                  ) : previewData.file_type === 'xlsx' ? (
-                    <iframe
-                      src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewData.url)}`}
-                      className="w-full h-full rounded-xl"
-                      title="preview"
-                    />
-                  ) : (
-                    <iframe
-                      src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewData.url)}&embedded=true`}
-                      className="w-full h-full rounded-xl"
-                      title="preview"
-                    />
-                  )
+              previewData.file_type === 'pdf' ? (
+                <iframe src={previewData.url} className="w-full h-full rounded-xl" title="preview"/>
+              ) : previewData.file_type === 'xlsx' ? (
+                <iframe src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewData.url)}`} className="w-full h-full rounded-xl" title="preview"/>
+              ) : (
+                <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewData.url)}&embedded=true`} className="w-full h-full rounded-xl" title="preview"/>
+              )
             ) : (
               <p className='text-gray-500'>No preview available</p>
             )}
