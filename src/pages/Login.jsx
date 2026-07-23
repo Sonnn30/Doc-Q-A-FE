@@ -8,23 +8,42 @@ export default function Login() {
   const [isHide, setHide] = useState(true)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const Login_info = {
-    "email": email,
-    "password": password
+
+  const validate = () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const symbolRegex = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/
+
+    if (!emailRegex.test(email)) {
+      toast.error("Please enter a valid email address")
+      return false
+    }
+    if (password.length < 8) {
+      toast.error("Password must be at least 8 characters")
+      return false
+    }
+    if (!symbolRegex.test(password)) {
+      toast.error("Password must contain at least one symbol")
+      return false
+    }
+    return true
   }
+
   const handlesubmit = () => {
-    axiosInstance.post("/api/login", Login_info)
+    if (!validate()) return
+
+    axiosInstance.post("/api/login", { email, password })
       .then((res) => {
         toast.success("Login successfully")
         sessionStorage.setItem("access_token", res.data.access_token)
         localStorage.setItem("refresh_token", res.data.refresh_token)
         navigate("/")
       })
-      .catch(error =>{
+      .catch(error => {
         const detail = error.response?.data?.detail
         toast.error(detail ?? "Something went wrong, please try again")
       })
   }
+
   return (
     <div className='w-full h-screen flex flex-col justify-center items-center gap-10'>
       <div className='flex flex-col items-center gap-4'>
@@ -33,27 +52,24 @@ export default function Login() {
       </div>
       <div className='flex flex-col gap-4 w-full items-center'>
         <div className='rounded-md w-[300px] h-[40px] bg-[#f3f3f3] focus-within:ring-1 focus-within:ring-green-500'>
-            <input type="text" placeholder='Email address' value={email} className='w-full h-full px-2 outline-none ' onChange={(e) => setEmail(e.target.value)}/>
+          <input type="text" placeholder='Email address' value={email} className='w-full h-full px-2 outline-none' onChange={(e) => setEmail(e.target.value)}/>
         </div>
         <div className='relative rounded-md w-[300px] h-[40px] bg-[#f3f3f3] focus-within:ring-1 focus-within:ring-green-500'>
-            <input type={isHide ? "password" : "text"} placeholder='Password' value={password} className='w-full h-full px-2 pr-9 outline-none bg-transparent' onChange={(e) => setPassword(e.target.value)}/>
-            {
-              isHide
-              ?
-              <img src="/eye-close.svg" alt="eye-open" width={18} height={18} className='absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer' onClick={() => setHide(!isHide)}/>
-              :
-              <img src="/eye-open.svg" alt="eye-open" width={18} height={18} className='absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer' onClick={() => setHide(!isHide)}/>
-            }
+          <input type={isHide ? "password" : "text"} placeholder='Password' value={password} className='w-full h-full px-2 pr-9 outline-none bg-transparent' onChange={(e) => setPassword(e.target.value)}/>
+          {isHide
+            ? <img src="/eye-close.svg" alt="eye-close" width={18} height={18} className='absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer' onClick={() => setHide(!isHide)}/>
+            : <img src="/eye-open.svg" alt="eye-open" width={18} height={18} className='absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer' onClick={() => setHide(!isHide)}/>
+          }
         </div>
         <button className='bg-[#27bb88] w-[300px] h-[40px] flex justify-center items-center text-white rounded-md hover:cursor-pointer' onClick={handlesubmit}>
-            login
+          login
         </button>
-      <a href="/forgot-password" className='text-[12px] hover:underline'>Forget your password?</a>
+        <a href="/forgot-password" className='text-[12px] hover:underline'>Forget your password?</a>
       </div>
       <div className='flex flex-col w-full justify-center items-center gap-5'>
         <p>Don't have a account?</p>
         <a href='/signup' className='w-[300px] h-[40px] flex justify-center items-center border border-gray-300 rounded-md shadow-lg hover:cursor-pointer'>
-            Create new account
+          Create new account
         </a>
       </div>
     </div>
