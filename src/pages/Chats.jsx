@@ -214,13 +214,16 @@ export default function Chats() {
   }, [messages.length])
 
   return (
-    <div className='relative flex flex-col h-screen w-full overflow-hidden'>
+    // FIXED: h-screen -> h-dvh agar tinggi container mengikuti viewport aktual di mobile
+    // (memperhitungkan address bar browser yang muncul/hilang)
+    <div className='relative flex flex-col w-full overflow-hidden' style={{ height: '100vh', height: '100dvh' }}>
       <div
         ref={scrollContainerRef}
         className='absolute inset-0 overflow-y-auto flex flex-col items-center'
       >
         {/* RESPONSIVE: padding horizontal lebih kecil di mobile, lebih besar di desktop */}
-        <div className='w-full max-w-[800px] flex flex-col gap-4 sm:gap-6 px-3 sm:px-4 pt-4 sm:pt-6 pb-36 sm:pb-32'>
+        {/* FIXED: pb-36 -> pb-28 di mobile agar pesan terakhir tidak tertutup input bar */}
+        <div className='w-full max-w-[800px] flex flex-col gap-4 sm:gap-6 px-3 sm:px-4 pt-4 sm:pt-6 pb-28 sm:pb-32'>
           {isLocalChatbot ? (
             <div className='flex items-center justify-center h-40 text-gray-400 text-center px-4'>
               Please set up your chatbot information first before starting a chat.
@@ -256,8 +259,13 @@ export default function Chats() {
         </div>
       </div>
 
-      {/* RESPONSIVE: input bar menyesuaikan lebar layar */}
-      <div className='absolute bottom-0 left-0 w-full sm:w-[99%] bg-white flex justify-center py-3 sm:py-5 px-3 sm:px-0 border-t border-gray-100 sm:border-0'>
+      {/* FIXED: absolute -> fixed agar posisi input selalu relatif terhadap viewport,
+          bukan terhadap parent container. Ini mencegah input terdorong ke bawah
+          viewport di mobile saat address bar browser muncul. */}
+      <div
+        className='fixed bottom-0 left-0 w-full sm:w-[99%] bg-white flex justify-center px-3 sm:px-0 border-t border-gray-100 sm:border-0'
+        style={{ paddingTop: '0.75rem', paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))', paddingTop: '1.25rem' }}
+      >
         <div className='w-full max-w-[680px] sm:px-4'>
           <div className='relative w-full flex items-end'>
             <textarea
