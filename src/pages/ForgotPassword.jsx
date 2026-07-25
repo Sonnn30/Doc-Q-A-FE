@@ -13,7 +13,7 @@ export default function ForgotPassword() {
       return
     }
 
-    axios.post("http://127.0.0.1:8000/api/send-verify-code", { email })
+    axios.post("https://api.docuswift.online/api/send-verify-code", { email })
       .then(() => {
         toast.success("6 digit code sent to your email")
         navigate("/input-code", { state: { email } })  // pass email ke halaman berikutnya

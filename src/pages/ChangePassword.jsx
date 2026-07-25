@@ -19,7 +19,7 @@ export default function ChangePassword() {
       return
     }
 
-    axios.put("http://127.0.0.1:8000/api/change-password", {
+    axios.put("https://api.docuswift.online/api/change-password", {
       email,
       password,
       confirmed_password: confirmedPassword

@@ -34,7 +34,7 @@ export default function InputCode() {
       return
     }
 
-    axios.post("http://127.0.0.1:8000/api/check-verify-code", {
+    axios.post("https://api.docuswift.online/api/check-verify-code", {
       email,
       code: parseInt(code)
     })
@@ -49,7 +49,7 @@ export default function InputCode() {
   }
 
   const handleResend = () => {
-    axios.post("http://127.0.0.1:8000/api/resend-verify-code", { email })
+    axios.post("https://api.docuswift.online/api/resend-verify-code", { email })
       .then(() => {
         toast.success("Code resent to your email")
         setTimeLeft(3 * 60) // reset timer
