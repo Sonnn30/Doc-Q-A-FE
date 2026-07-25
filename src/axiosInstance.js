@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: "http://127.0.0.1:8000",
+  baseURL: "http://129.225.7.182:8000",  // ← ubah ini
 });
 
 // otomatis nempelin access_token ke setiap request
@@ -28,7 +28,7 @@ axiosInstance.interceptors.response.use(
           throw new Error("No refresh token");
         }
 
-        const res = await axios.post("http://127.0.0.1:8000/api/refresh-token", {
+        const res = await axios.post("http://129.225.7.182:8000/api/refresh-token", {  // ← ubah ini
           refresh_token: refreshToken,
         });
 

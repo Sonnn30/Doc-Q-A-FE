@@ -90,7 +90,7 @@ export default function Chats() {
     try {
       const token = sessionStorage.getItem("access_token")
 
-      const response = await fetch(`http://127.0.0.1:8000/api/message/${activeChatbotId}`, {
+      const response = await fetch(`http://129.225.7.182:8000/api/message/${activeChatbotId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
