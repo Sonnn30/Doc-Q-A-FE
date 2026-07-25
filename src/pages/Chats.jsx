@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
-export default function Chats() {
+export default function Chats({ isSidebarOpen }) {
   const { chatbotId } = useParams()
   const [messages, setMessages] = useState([])
   const [inputValue, setInputValue] = useState("")
@@ -213,6 +213,28 @@ export default function Chats() {
     scrollToBottom()
   }, [messages.length])
 
+  // NEW: set CSS variable offset kiri & lebar input bar berdasarkan status sidebar,
+  // supaya input bar center terhadap area chat saat sidebar terbuka,
+  // dan center terhadap seluruh layar saat sidebar tertutup.
+  useEffect(() => {
+    const applyOffset = () => {
+      const root = document.documentElement
+      const isDesktop = window.innerWidth >= 640 // breakpoint 'sm' Tailwind
+      if (!isDesktop) {
+        root.style.setProperty('--chat-left-offset', '0px')
+        root.style.setProperty('--chat-width', '100%')
+        return
+      }
+      const offset = isSidebarOpen ? 320 : 24 // lebar sidebar terbuka (sm:w-[320px]) vs strip toggle (w-6)
+      root.style.setProperty('--chat-left-offset', `${offset}px`)
+      root.style.setProperty('--chat-width', `calc(100% - ${offset}px)`)
+    }
+
+    applyOffset()
+    window.addEventListener('resize', applyOffset)
+    return () => window.removeEventListener('resize', applyOffset)
+  }, [isSidebarOpen])
+
   return (
     // FIXED: h-screen -> h-dvh agar tinggi container mengikuti viewport aktual di mobile
     // (memperhitungkan address bar browser yang muncul/hilang)
@@ -259,12 +281,19 @@ export default function Chats() {
         </div>
       </div>
 
-      {/* FIXED: absolute -> fixed agar posisi input selalu relatif terhadap viewport,
-          bukan terhadap parent container. Ini mencegah input terdorong ke bawah
-          viewport di mobile saat address bar browser muncul. */}
+      {/* FIXED: left & width dihitung dinamis lewat CSS variable --chat-left-offset / --chat-width
+          (diset di useEffect di atas berdasarkan isSidebarOpen), supaya input bar
+          center terhadap area chat saat sidebar terbuka, dan center terhadap
+          seluruh layar saat sidebar tertutup. Tetap 'fixed' agar tidak ikut
+          terdorong saat address bar browser muncul/hilang di mobile. */}
       <div
-        className='fixed bottom-0 left-0 w-full sm:w-[99%] bg-white flex justify-center px-3 sm:px-0 border-t border-gray-100 sm:border-0'
-        style={{ paddingTop: '0.75rem', paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))', paddingTop: '1.25rem' }}
+        className='fixed bottom-0 bg-white flex justify-center px-3 sm:px-0 border-t border-gray-100 sm:border-0 transition-[left,width] duration-300 ease-in-out'
+        style={{
+          left: 'var(--chat-left-offset, 0px)',
+          width: 'var(--chat-width, 100%)',
+          paddingTop: '0.75rem',
+          paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
+        }}
       >
         <div className='w-full max-w-[680px] sm:px-4'>
           <div className='relative w-full flex items-end'>

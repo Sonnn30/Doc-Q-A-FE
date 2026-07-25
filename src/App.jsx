@@ -16,7 +16,6 @@ function MainLayout({ children, isOpen, onToggle }) {
     <div className='flex h-screen'>
       <Sidebar isOpen={isOpen} onToggle={onToggle} />
 
-      {/* Strip tipis hanya muncul saat sidebar tertutup */}
       {!isOpen && (
         <div
           onClick={onToggle}
@@ -27,7 +26,8 @@ function MainLayout({ children, isOpen, onToggle }) {
       )}
 
       <div className='flex-1 overflow-auto'>
-        {children}
+        {/* CHANGED: suntik isSidebarOpen ke children agar Chats.jsx tahu status sidebar */}
+        {React.cloneElement(children, { isSidebarOpen: isOpen })}
       </div>
     </div>
   )
