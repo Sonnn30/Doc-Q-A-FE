@@ -10,6 +10,7 @@ export default function ChatBots() {
   const [chatbotdata, setChatbotData] = useState(null)
   const [isEdit, setEdit] = useState(false)
   const [isDelete, setDelete] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false) // NEW: guard supaya handleSubmit tidak bisa dipanggil dobel (double click/tap)
   const { chatbotId } = useParams()
   const navigate = useNavigate()
 
@@ -51,6 +52,10 @@ export default function ChatBots() {
   }, [isEdit])
 
   const handleSubmit = () => {
+    // NEW: kalau masih dalam proses submit sebelumnya, abaikan klik/tap berikutnya
+    if (isSubmitting) return
+    setIsSubmitting(true)
+
     axiosInstance.post("/api/createBot", chatbot_information)
       .then((res) => {
         const new_id = res.data.id
@@ -67,6 +72,7 @@ export default function ChatBots() {
         const message = Array.isArray(detail) ? detail[0]?.msg : detail
         toast.error(message ?? "Something went wrong, please try again")
       })
+      .finally(() => setIsSubmitting(false)) // NEW: reset guard baik sukses maupun gagal
   }
 
   const handleSave = () => {
@@ -176,8 +182,13 @@ export default function ChatBots() {
         </div>
         {/* RESPONSIVE: center di mobile, end di desktop */}
         <div className='flex justify-center sm:justify-end px-4 sm:pr-10 sm:px-0 pt-5 pb-4'>
-          <button className='flex justify-center items-center w-35 h-10 bg-[#27bb88] rounded-md text-[15px] text-white font-semibold hover:cursor-pointer' onClick={handleSubmit}>
-            Create chatbot
+          {/* NEW: disabled + label berubah selama isSubmitting, mencegah klik ganda */}
+          <button
+            className='flex justify-center items-center w-35 h-10 bg-[#27bb88] rounded-md text-[15px] text-white font-semibold hover:cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed'
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Creating..." : "Create chatbot"}
           </button>
         </div>
       </div>
@@ -252,8 +263,13 @@ export default function ChatBots() {
       <div className='flex justify-center sm:justify-end px-4 sm:pr-10 sm:px-0 pt-7 pb-4'>
         {chatbotdata == null
           ? (
-            <button className='flex justify-center items-center w-35 h-10 bg-[#27bb88] rounded-md text-[15px] text-white font-semibold hover:cursor-pointer' onClick={handleSubmit}>
-              Create chatbot
+            // NEW: disabled + label berubah selama isSubmitting, mencegah klik ganda
+            <button
+              className='flex justify-center items-center w-35 h-10 bg-[#27bb88] rounded-md text-[15px] text-white font-semibold hover:cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed'
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Creating..." : "Create chatbot"}
             </button>
           )
           : isEdit && (
