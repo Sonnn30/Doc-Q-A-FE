@@ -219,26 +219,28 @@ export default function Chats() {
         ref={scrollContainerRef}
         className='absolute inset-0 overflow-y-auto flex flex-col items-center'
       >
-        <div className='w-full max-w-[800px] flex flex-col gap-6 px-4 pt-6 pb-32'>
+        {/* RESPONSIVE: padding horizontal lebih kecil di mobile, lebih besar di desktop */}
+        <div className='w-full max-w-[800px] flex flex-col gap-4 sm:gap-6 px-3 sm:px-4 pt-4 sm:pt-6 pb-36 sm:pb-32'>
           {isLocalChatbot ? (
-            <div className='flex items-center justify-center h-40 text-gray-400 text-center'>
+            <div className='flex items-center justify-center h-40 text-gray-400 text-center px-4'>
               Please set up your chatbot information first before starting a chat.
             </div>
           ) : (
             messages.map((msg) =>
               msg.sender === "user" ? (
                 <div key={msg.id} className='w-full flex justify-end'>
-                  <div className='bg-[#27bb88] rounded-xl py-3 px-5 max-w-[75%] min-w-0'>
-                    <p className='text-white font-medium text-[15px] break-words whitespace-pre-wrap m-0'>
+                  {/* RESPONSIVE: max-width lebih lebar di mobile agar tidak terlalu sempit */}
+                  <div className='bg-[#27bb88] rounded-xl py-2.5 sm:py-3 px-4 sm:px-5 max-w-[85%] sm:max-w-[75%] min-w-0'>
+                    <p className='text-white font-medium text-[14px] sm:text-[15px] break-words whitespace-pre-wrap m-0'>
                       {msg.message}
                     </p>
                   </div>
                 </div>
               ) : (
-                <div key={msg.id} className='self-start w-full rounded-xl text-[15px] prose prose-sm max-w-none -mt-10 mb-8'>
+                <div key={msg.id} className='self-start w-full rounded-xl text-[14px] sm:text-[15px] prose prose-sm max-w-none -mt-6 sm:-mt-10 mb-4 sm:mb-8'>
                   {msg.message
                     ? (
-                      <div className='px-5 pt-4 rounded-xl'>
+                      <div className='px-3 sm:px-5 pt-3 sm:pt-4 rounded-xl'>
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                           {msg.message}
                         </ReactMarkdown>
@@ -254,8 +256,9 @@ export default function Chats() {
         </div>
       </div>
 
-      <div className='absolute bottom-0 left-0 w-[99%] bg-white flex justify-center py-5'>
-        <div className='w-full max-w-[680px] px-4'>
+      {/* RESPONSIVE: input bar menyesuaikan lebar layar */}
+      <div className='absolute bottom-0 left-0 w-full sm:w-[99%] bg-white flex justify-center py-3 sm:py-5 px-3 sm:px-0 border-t border-gray-100 sm:border-0'>
+        <div className='w-full max-w-[680px] sm:px-4'>
           <div className='relative w-full flex items-end'>
             <textarea
               ref={textareaRef}

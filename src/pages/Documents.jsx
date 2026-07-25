@@ -186,15 +186,16 @@ export default function Documents() {
   if (isLocalChatbot) {
     return (
       <div className='relative flex flex-col gap-6 h-screen'>
-        <div className='flex justify-between items-center border-b-2 border-t-2 border-[#d9d9d9] p-7'>
+        {/* RESPONSIVE: padding header lebih kecil di mobile */}
+        <div className='flex justify-between items-center border-b-2 border-t-2 border-[#d9d9d9] p-4 sm:p-7'>
           <div className='flex flex-col gap-1'>
-            <h2 className='font-bold text-xl'>Add documents</h2>
-            <p className='font-semibold text-gray-500'>Your chatbot will answer questions based on these documents.</p>
+            <h2 className='font-bold text-lg sm:text-xl'>Add documents</h2>
+            <p className='font-semibold text-gray-500 text-sm sm:text-base'>Your chatbot will answer questions based on these documents.</p>
           </div>
         </div>
         <div className='flex flex-col h-full justify-center items-center gap-3'>
           <img src="/docs.svg" alt="docs" width={150} height={150}/>
-          <p className='text-center font-semibold text-gray-400'>
+          <p className='text-center font-semibold text-gray-400 text-sm sm:text-base px-4'>
             Please set up your chatbot first<br />before adding documents
           </p>
         </div>
@@ -204,17 +205,24 @@ export default function Documents() {
 
   return (
     <div className='relative flex flex-col gap-6 h-screen'>
-      <div className='flex justify-between items-center border-b-2 border-t-2 border-[#d9d9d9] p-7'>
-        <div className='flex flex-col gap-1'>
-          <h2 className='font-bold text-xl'>Add documents</h2>
-          <p className='font-semibold text-gray-500'>Your chatbot will answer questions based on these documents.</p>
+      {/* RESPONSIVE: padding header lebih kecil di mobile, tombol Add new document menyesuaikan */}
+      <div className='flex justify-between items-center border-b-2 border-t-2 border-[#d9d9d9] p-4 sm:p-7 gap-3'>
+        <div className='flex flex-col gap-1 min-w-0'>
+          <h2 className='font-bold text-lg sm:text-xl'>Add documents</h2>
+          {/* RESPONSIVE: subtitle disembunyikan di mobile sangat kecil agar tidak berdesakan */}
+          <p className='font-semibold text-gray-500 text-sm sm:text-base hidden xs:block sm:block'>Your chatbot will answer questions based on these documents.</p>
         </div>
         {isUpload && 
           <>
             <input type="file" ref={fileUpload} className="hidden" accept='.pdf, .docx, .pptx, .xlsx' onChange={(e) => handleUpload(e.target.files[0])}/>
-            <div className='flex justify-center items-center border-2 border-[#d9d9d9] w-46 h-9 rounded-lg shadow-md hover:cursor-pointer hover:bg-gray-100' onClick={handleFileUpload}>
+            {/* RESPONSIVE: tombol lebih ringkas di mobile */}
+            <div
+              className='flex justify-center items-center border-2 border-[#d9d9d9] shrink-0 h-9 rounded-lg shadow-md hover:cursor-pointer hover:bg-gray-100 px-2 sm:w-46 sm:px-0 gap-1'
+              onClick={handleFileUpload}
+            >
               <img src="/plus.svg" alt="plus" width={25} height={25}/>
-              <p className='font-semibold text-[15px]'>Add new document</p>
+              {/* RESPONSIVE: teks tombol disembunyikan di layar sangat kecil, hanya icon */}
+              <p className='font-semibold text-[13px] sm:text-[15px] hidden sm:block'>Add new document</p>
             </div>
           </>
         }
@@ -223,12 +231,13 @@ export default function Documents() {
         isUpload 
         ?
         <>
+          {/* RESPONSIVE: search bar padding menyesuaikan */}
           <div className='relative flex w-full px-3'>
             <img src="/search.svg" alt="search" width={35} height={35} className='absolute left-5 top-1/2 -translate-y-1/2 pointer-events-none'/>
             <input
               type="text"
               placeholder='Search documents...'
-              className='border-2 border-[#d9d9d9] placeholder:text-lg pl-12 pr-3 text-lg outline-none w-full h-11 rounded-md'
+              className='border-2 border-[#d9d9d9] placeholder:text-sm sm:placeholder:text-lg pl-12 pr-3 text-sm sm:text-lg outline-none w-full h-11 rounded-md'
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -238,23 +247,24 @@ export default function Documents() {
             {documents.map((doc) => (
               <div 
                 key={doc.id}
-                className={`relative flex items-center gap-2.5 px-6 mb-2 rounded-lg h-11 justify-between ${checkedDocs.has(doc.id) ? "bg-[#e1faed]" : ""}`} 
+                className={`relative flex items-center gap-2.5 px-3 sm:px-6 mb-2 rounded-lg h-11 justify-between ${checkedDocs.has(doc.id) ? "bg-[#e1faed]" : ""}`} 
                 onClick={() => toggleCheck(doc.id)}
               >
-                <div className='flex items-center gap-2.5'>
-                  <div className={`w-5 h-5 rounded-md border flex items-center justify-center ${checkedDocs.has(doc.id) ? "bg-[#27bb88] border-[#27bb88]" : "border-gray-400 bg-white"}`}>
+                <div className='flex items-center gap-2.5 min-w-0'>
+                  <div className={`w-5 h-5 shrink-0 rounded-md border flex items-center justify-center ${checkedDocs.has(doc.id) ? "bg-[#27bb88] border-[#27bb88]" : "border-gray-400 bg-white"}`}>
                     {checkedDocs.has(doc.id) && (
                       <img src="/check.svg" alt="check" className="w-4 h-4"/>
                     )}
                   </div>
-                  <p className="text-md font-semibold">{doc.filename}.{doc.file_type}</p>
+                  {/* RESPONSIVE: nama file terpotong dengan ellipsis agar tidak mendorong tombol more */}
+                  <p className="text-sm sm:text-md font-semibold truncate max-w-[160px] sm:max-w-none">{doc.filename}.{doc.file_type}</p>
                 </div>
                 {more == "" || more != doc.id ? 
-                  <img src="/more.svg" alt="more" width={20} height={20} className='hover:cursor-pointer absolute right-6 z-10' onClick={(e) => { e.stopPropagation(); setMore(doc.id) }}/>
+                  <img src="/more.svg" alt="more" width={20} height={20} className='hover:cursor-pointer absolute right-3 sm:right-6 z-10' onClick={(e) => { e.stopPropagation(); setMore(doc.id) }}/>
                 : ""
                 }
                 {more == doc.id ? 
-                  <div className='absolute right-6 flex flex-col border bg-white w-35 h-27 rounded-lg z-50' onClick={(e) => e.stopPropagation()}>
+                  <div className='absolute right-3 sm:right-6 flex flex-col border bg-white w-35 h-27 rounded-lg z-50' onClick={(e) => e.stopPropagation()}>
                     <div className='flex items-center justify-between border-b px-2 h-9 hover:cursor-pointer' onClick={(e) => { e.stopPropagation(); handlePreview(doc.id, doc.file_type) }}>
                       <p>Preview</p>
                       <img src="/preview.svg" alt="preview" width={20} height={20}/>
@@ -275,7 +285,8 @@ export default function Documents() {
           </div>
 
           {documents.length > 0 && (
-            <div className='flex justify-end items-center gap-2 pt-25 pb-10 px-10'>
+            // RESPONSIVE: pagination wrap di mobile, padding dikurangi
+            <div className='flex flex-wrap justify-center sm:justify-end items-center gap-2 pt-10 sm:pt-25 pb-6 sm:pb-10 px-4 sm:px-10'>
               <select
                 value={limit}
                 onChange={(e) => handleLimitChange(Number(e.target.value))}
@@ -289,7 +300,7 @@ export default function Documents() {
               <input
                 type="text"
                 disabled
-                className='bg-gray-100 w-32 border border-[#d9d9d9] text-sm rounded-md px-2.5 py-2 text-gray-400 cursor-not-allowed'
+                className='bg-gray-100 w-28 sm:w-32 border border-[#d9d9d9] text-sm rounded-md px-2.5 py-2 text-gray-400 cursor-not-allowed'
                 placeholder={`${currentPage} of ${totalPages} pages`}
               />
 
@@ -316,9 +327,9 @@ export default function Documents() {
           )}
         </>
         :
-        <div className='flex flex-col h-full justify-center items-center gap-3'>
+        <div className='flex flex-col h-full justify-center items-center gap-3 px-4'>
           <img src="/docs.svg" alt="docs" width={150} height={150}/>
-          <p className='text-center font-semibold'>You haven't added any documents to<br />the knowledge base yet</p>
+          <p className='text-center font-semibold text-sm sm:text-base'>You haven't added any documents to<br />the knowledge base yet</p>
           <div>
             <label 
               htmlFor="file-upload" 
@@ -337,34 +348,37 @@ export default function Documents() {
         </div>
       }
       {preview && 
-        <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center w-7xl h-200 bg-[#27bb88] border-4 rounded-3xl'>
-          <img 
-            src="/close2.svg" 
-            alt="close" 
-            width={20} 
-            height={20} 
-            className='absolute right-2.5 top-1 hover:cursor-pointer z-10' 
-            onClick={() => {
-              setPreview(false)
-              setPreviewData(null)
-            }}
-          />
-          <div className='flex items-center justify-center w-[96%] h-[94%] bg-white rounded-xl overflow-hidden'>
-            {previewLoading ? (
-              <p className='text-gray-500'>Loading preview...</p>
-            ) : previewData ? (
-              previewData.file_type === 'pdf' ? (
-                <iframe src={previewData.url} className="w-full h-full rounded-xl" title="preview"/>
-              ) : previewData.file_type === 'xlsx' ? (
-                <iframe src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewData.url)}`} className="w-full h-full rounded-xl" title="preview"/>
+        // RESPONSIVE: preview modal fixed, ukuran dibatasi agar tidak full layar di mobile
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 sm:p-6'>
+          <div className='relative flex items-center justify-center w-[92vw] h-[75vh] sm:w-full sm:h-full sm:max-w-7xl sm:max-h-[95vh] bg-[#27bb88] border-4 rounded-3xl'>
+            <img 
+              src="/close2.svg" 
+              alt="close" 
+              width={20} 
+              height={20} 
+              className='absolute right-2.5 top-1 hover:cursor-pointer z-10' 
+              onClick={() => {
+                setPreview(false)
+                setPreviewData(null)
+              }}
+            />
+            <div className='flex items-center justify-center w-[96%] h-[94%] bg-white rounded-xl overflow-hidden'>
+              {previewLoading ? (
+                <p className='text-gray-500'>Loading preview...</p>
+              ) : previewData ? (
+                previewData.file_type === 'pdf' ? (
+                  <iframe src={previewData.url} className="w-full h-full rounded-xl" title="preview"/>
+                ) : previewData.file_type === 'xlsx' ? (
+                  <iframe src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewData.url)}`} className="w-full h-full rounded-xl" title="preview"/>
+                ) : (
+                  <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewData.url)}&embedded=true`} className="w-full h-full rounded-xl" title="preview"/>
+                )
               ) : (
-                <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewData.url)}&embedded=true`} className="w-full h-full rounded-xl" title="preview"/>
-              )
-            ) : (
-              <p className='text-gray-500'>No preview available</p>
-            )}
+                <p className='text-gray-500'>No preview available</p>
+              )}
+            </div>
           </div>
-        </div>      
+        </div>
       }
     </div>
   )

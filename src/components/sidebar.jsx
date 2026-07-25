@@ -78,116 +78,133 @@ export default function Sidebar({ isOpen, onToggle }) {
   }
 
   return (
-    <div
-      className={`h-screen flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden ${
-        isOpen ? 'w-[320px]' : 'w-0'
-      }`}
-    >
-      <div className='flex flex-col items-center h-full w-[320px] bg-white border-2 border-[#d9d9d9]'>
-
-        {/* Header */}
-        <div className='flex justify-center items-center gap-3 py-5 px-2'>
-          <img src="/chat1.svg" alt="chat1" width={40} height={40} />
-          <p className='font-bold text-xl'>DocuSwift</p>
-          <img
-            src="/sidebar.svg"
-            alt="sidebar"
-            width={25}
-            height={10}
-            className='ml-20 hover:cursor-pointer'
-            onClick={onToggle}
-          />
-        </div>
-
-        {/* New Chatbot Button */}
+    <>
+      {/* RESPONSIVE: overlay gelap di mobile saat sidebar terbuka, klik untuk tutup */}
+      {isOpen && (
         <div
-          className='flex justify-center items-center border border-[#d9d9d9] w-[85%] h-[45px] gap-2 shadow-md rounded-lg hover:cursor-pointer mt-5'
-          onClick={handleNewChatbotClick}
-        >
-          <img src="/plus.svg" alt="plus" width={25} height={25} />
-          <p className='font-semibold'>New Chatbot</p>
-        </div>
+          className='fixed inset-0 z-30 bg-black/40 sm:hidden'
+          onClick={onToggle}
+        />
+      )}
 
-        {/* Chatbot List */}
-        <div className='flex flex-col items-center gap-3 w-full h-[75%] min-h-0 overflow-y-auto mt-9'>
-          {chatbot.map((bot) => (
-            <React.Fragment key={bot.id}>
-              <div
-                className="shrink-0 flex justify-between items-center w-[270px] h-[50px] px-3 border-2 border-[#d9d9d9] shadow-sm hover:cursor-pointer rounded-xl"
-                onClick={() => setDropDown(prev => ({ ...prev, [bot.id]: !prev[bot.id] }))}
-              >
-                <div className='flex items-center gap-4 w-full'>
-                  <img src="/chatbot.svg" alt="chat2" width={21} height={21} className='-mt-0.5' />
-                  <p className='font-semibold text-[17px]'>{bot.name}</p>
-                </div>
-                {isDropDown[bot.id]
-                  ? <img src="/drop-up.svg" alt="dropdown" width={25} height={25} />
-                  : <img src="/dropdown.svg" alt="dropdown" width={25} height={25} className='mt-1' />
-                }
-              </div>
+      <div
+        className={`
+          h-screen flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden z-40
+          fixed sm:relative
+          ${isOpen ? 'w-[280px] sm:w-[320px]' : 'w-0'}
+        `}
+      >
+        <div className='flex flex-col items-center h-full w-[280px] sm:w-[320px] bg-white border-2 border-[#d9d9d9]'>
 
-              {isDropDown[bot.id] && (
-                <div className='flex flex-col gap-5 w-full items-center mt-3'>
-                  <Link
-                    to={`/chats/${bot.id}`}
-                    className={`flex items-center p-2 gap-4 w-[75%] -mt-4 rounded-xl ${isClicked[bot.id] === "1" ? "bg-[#e1faed]" : ""}`}
-                    onClick={() => setClicked(prev => ({ ...prev, [bot.id]: "1" }))}
-                  >
-                    {isClicked[bot.id] === "1"
-                      ? <><img src="/chat-green.svg" alt="chatbot-green" width={20} height={20} /><p className='font-semibold text-md text-[#27bb88]'>Chats</p></>
-                      : <><img src="/chat2.svg" alt="chatbot" width={20} height={20} /><p className='font-semibold text-md'>Chats</p></>
-                    }
-                  </Link>
-
-                  <Link
-                    to={`/chatbots/${bot.id}`}
-                    className={`flex items-center p-2 gap-4 w-[75%] -mt-4 rounded-xl ${isClicked[bot.id] === "2" ? "bg-[#e1faed]" : ""}`}
-                    onClick={() => setClicked(prev => ({ ...prev, [bot.id]: "2" }))}
-                  >
-                    {isClicked[bot.id] === "2"
-                      ? <><img src="/my-bot-green.svg" alt="chatbot-green" width={20} height={20} /><p className='font-semibold text-md text-[#27bb88]'>Manage Bot</p></>
-                      : <><img src="/my-bot.svg" alt="chatbot" width={20} height={20} /><p className='font-semibold text-md'>Manage Bot</p></>
-                    }
-                  </Link>
-
-                  <Link
-                    to={`/documents/${bot.id}`}
-                    className={`flex items-center p-2 gap-4 w-[75%] -mt-4 rounded-xl ${isClicked[bot.id] === "3" ? "bg-[#e1faed]" : ""}`}
-                    onClick={() => setClicked(prev => ({ ...prev, [bot.id]: "3" }))}
-                  >
-                    {isClicked[bot.id] === "3"
-                      ? <><img src="/document-green.svg" alt="document-green" width={20} height={20} /><p className='font-semibold text-md text-[#27bb88]'>Documents</p></>
-                      : <><img src="/document.svg" alt="document" width={20} height={20} /><p className='font-semibold text-md'>Documents</p></>
-                    }
-                  </Link>
-                </div>
-              )}
-            </React.Fragment>
-          ))}
-        </div>
-
-        {/* Footer / User Info */}
-        <div className='flex justify-center items-center gap-7 w-full h-20 border-t-2 border-[#d9d9d9]'>
-          <div className='flex items-center gap-4'>
-            <div className='flex justify-center items-center w-10 h-10 rounded-full bg-[#e1faed] shadow-sm'>
-              <p className='text-[#27bb88] text-md font-bold'>{FirstLetter(name)}</p>
-            </div>
-            <div className='flex flex-col w-40'>
-              <p className='font-semibold text-[16px]'>{name}</p>
-              <p className='text-[12px]'>{email}</p>
-            </div>
+          {/* Header */}
+          <div className='flex justify-center items-center gap-3 py-5 px-2'>
+            <img src="/chat1.svg" alt="chat1" width={40} height={40} />
+            <p className='font-bold text-xl'>DocuSwift</p>
+            {/* RESPONSIVE: ml lebih kecil di mobile */}
+            <img
+              src="/sidebar.svg"
+              alt="sidebar"
+              width={25}
+              height={10}
+              className='ml-10 sm:ml-20 hover:cursor-pointer'
+              onClick={onToggle}
+            />
           </div>
-          <img
-            src="/logout.svg"
-            alt="logout"
-            width={22}
-            height={22}
-            className='hover:cursor-pointer'
-            onClick={handleLogout}
-          />
-        </div>
 
+          {/* New Chatbot Button */}
+          <div
+            className='flex justify-center items-center border border-[#d9d9d9] w-[85%] h-[45px] gap-2 shadow-md rounded-lg hover:cursor-pointer mt-5'
+            onClick={handleNewChatbotClick}
+          >
+            <img src="/plus.svg" alt="plus" width={25} height={25} />
+            <p className='font-semibold'>New Chatbot</p>
+          </div>
+
+          {/* Chatbot List */}
+          {/* RESPONSIVE: lebar item card menyesuaikan sidebar yang lebih sempit di mobile */}
+          <div className='flex flex-col items-center gap-3 w-full h-[75%] min-h-0 overflow-y-auto mt-9'>
+            {chatbot.map((bot) => (
+              <React.Fragment key={bot.id}>
+                <div
+                  className="shrink-0 flex justify-between items-center w-[90%] sm:w-[270px] h-[50px] px-3 border-2 border-[#d9d9d9] shadow-sm hover:cursor-pointer rounded-xl"
+                  onClick={() => setDropDown(prev => ({ ...prev, [bot.id]: !prev[bot.id] }))}
+                >
+                  <div className='flex items-center gap-4 w-full'>
+                    <img src="/chatbot.svg" alt="chat2" width={21} height={21} className='-mt-0.5' />
+                    {/* RESPONSIVE: teks bot name terpotong jika terlalu panjang */}
+                    <p className='font-semibold text-[15px] sm:text-[17px] truncate max-w-[140px] sm:max-w-[160px]'>{bot.name}</p>
+                  </div>
+                  {isDropDown[bot.id]
+                    ? <img src="/drop-up.svg" alt="dropdown" width={25} height={25} />
+                    : <img src="/dropdown.svg" alt="dropdown" width={25} height={25} className='mt-1' />
+                  }
+                </div>
+
+                {isDropDown[bot.id] && (
+                  <div className='flex flex-col gap-5 w-full items-center mt-3'>
+                    <Link
+                      to={`/chats/${bot.id}`}
+                      className={`flex items-center p-2 gap-4 w-[75%] -mt-4 rounded-xl ${isClicked[bot.id] === "1" ? "bg-[#e1faed]" : ""}`}
+                      onClick={() => setClicked(prev => ({ ...prev, [bot.id]: "1" }))}
+                    >
+                      {isClicked[bot.id] === "1"
+                        ? <><img src="/chat-green.svg" alt="chatbot-green" width={20} height={20} /><p className='font-semibold text-md text-[#27bb88]'>Chats</p></>
+                        : <><img src="/chat2.svg" alt="chatbot" width={20} height={20} /><p className='font-semibold text-md'>Chats</p></>
+                      }
+                    </Link>
+
+                    <Link
+                      to={`/chatbots/${bot.id}`}
+                      className={`flex items-center p-2 gap-4 w-[75%] -mt-4 rounded-xl ${isClicked[bot.id] === "2" ? "bg-[#e1faed]" : ""}`}
+                      onClick={() => setClicked(prev => ({ ...prev, [bot.id]: "2" }))}
+                    >
+                      {isClicked[bot.id] === "2"
+                        ? <><img src="/my-bot-green.svg" alt="chatbot-green" width={20} height={20} /><p className='font-semibold text-md text-[#27bb88]'>Manage Bot</p></>
+                        : <><img src="/my-bot.svg" alt="chatbot" width={20} height={20} /><p className='font-semibold text-md'>Manage Bot</p></>
+                      }
+                    </Link>
+
+                    <Link
+                      to={`/documents/${bot.id}`}
+                      className={`flex items-center p-2 gap-4 w-[75%] -mt-4 rounded-xl ${isClicked[bot.id] === "3" ? "bg-[#e1faed]" : ""}`}
+                      onClick={() => setClicked(prev => ({ ...prev, [bot.id]: "3" }))}
+                    >
+                      {isClicked[bot.id] === "3"
+                        ? <><img src="/document-green.svg" alt="document-green" width={20} height={20} /><p className='font-semibold text-md text-[#27bb88]'>Documents</p></>
+                        : <><img src="/document.svg" alt="document" width={20} height={20} /><p className='font-semibold text-md'>Documents</p></>
+                      }
+                    </Link>
+                  </div>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+
+          {/* Footer / User Info */}
+          {/* RESPONSIVE: gap lebih kecil di mobile */}
+          <div className='flex justify-center items-center gap-4 sm:gap-7 w-full h-20 border-t-2 border-[#d9d9d9]'>
+            <div className='flex items-center gap-3 sm:gap-4'>
+              <div className='flex justify-center items-center w-10 h-10 rounded-full bg-[#e1faed] shadow-sm shrink-0'>
+                <p className='text-[#27bb88] text-md font-bold'>{FirstLetter(name)}</p>
+              </div>
+              {/* RESPONSIVE: lebar nama/email lebih kecil di mobile agar tidak overflow */}
+              <div className='flex flex-col w-32 sm:w-40'>
+                <p className='font-semibold text-[14px] sm:text-[16px] truncate'>{name}</p>
+                <p className='text-[11px] sm:text-[12px] truncate'>{email}</p>
+              </div>
+            </div>
+            <img
+              src="/logout.svg"
+              alt="logout"
+              width={22}
+              height={22}
+              className='hover:cursor-pointer shrink-0'
+              onClick={handleLogout}
+            />
+          </div>
+
+        </div>
       </div>
-    </div>
+    </>
   )
 }
