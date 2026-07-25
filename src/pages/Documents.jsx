@@ -102,17 +102,35 @@ export default function Documents() {
     }
   }
 
+  // NEW: state untuk melacak file yang sedang diupload beserta progressnya
+  const [uploadingFile, setUploadingFile] = useState(null)
+
   const handleUpload = (file) => {
     const formData = new FormData()
     formData.append("file", file)
 
-    axiosInstance.post(`/api/chatbot/${chatbotId}/upload-document`, formData, { headers: { "Content-Type": "multipart/form-data" } })
+    // NEW: set state uploading agar item loading muncul di paling atas list
+    setUploadingFile({ name: file.name, progress: 0 })
+
+    axiosInstance.post(`/api/chatbot/${chatbotId}/upload-document`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+      // NEW: pantau progress upload secara real-time untuk mengisi progress bar
+      onUploadProgress: (progressEvent) => {
+        if (!progressEvent.total) return
+        const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+        setUploadingFile((prev) => prev ? { ...prev, progress: percent } : prev)
+      }
+    })
       .then(res => {
         toast.success("file uploaded")
         fetchDocuments()
       })
       .catch(err => {
         toast.error(err.response?.data?.detail ?? "Upload Failed")
+      })
+      .finally(() => {
+        // NEW: bersihkan state uploading setelah selesai (sukses maupun gagal)
+        setUploadingFile(null)
       })
   }
 
@@ -244,6 +262,25 @@ export default function Documents() {
           </div>
 
           <div className='flex flex-col px-3'>
+            {/* NEW: item loading untuk file yang sedang diupload, tampil di paling atas list */}
+            {uploadingFile && (
+              <div className='relative flex flex-col gap-1.5 px-3 sm:px-6 mb-2 rounded-lg py-2.5 bg-gray-50'>
+                <div className='flex items-center gap-2.5 min-w-0'>
+                  <div className='w-5 h-5 shrink-0 rounded-md border border-gray-300 bg-white flex items-center justify-center'>
+                    <div className='w-2.5 h-2.5 border-2 border-[#27bb88] border-t-transparent rounded-full animate-spin'></div>
+                  </div>
+                  <p className='text-sm sm:text-md font-semibold truncate max-w-[200px] sm:max-w-none text-gray-600'>{uploadingFile.name}</p>
+                  <span className='text-xs text-gray-400 shrink-0 ml-auto'>{uploadingFile.progress}%</span>
+                </div>
+                {/* Progress bar horizontal */}
+                <div className='w-full h-1.5 bg-gray-200 rounded-full overflow-hidden'>
+                  <div
+                    className='h-full bg-[#27bb88] rounded-full transition-all duration-200 ease-out'
+                    style={{ width: `${uploadingFile.progress}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}
             {documents.map((doc) => (
               <div 
                 key={doc.id}
