@@ -102,19 +102,17 @@ export default function Documents() {
     }
   }
 
-  // NEW: state untuk melacak file yang sedang diupload beserta progressnya
   const [uploadingFile, setUploadingFile] = useState(null)
 
   const handleUpload = (file) => {
     const formData = new FormData()
     formData.append("file", file)
 
-    // NEW: set state uploading agar item loading muncul di paling atas list
     setUploadingFile({ name: file.name, progress: 0 })
+    setIsUpload(true) // tampilkan branch list agar animasi upload muncul
 
     axiosInstance.post(`/api/chatbot/${chatbotId}/upload-document`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
-      // NEW: pantau progress upload secara real-time untuk mengisi progress bar
       onUploadProgress: (progressEvent) => {
         if (!progressEvent.total) return
         const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total)
@@ -129,7 +127,6 @@ export default function Documents() {
         toast.error(err.response?.data?.detail ?? "Upload Failed")
       })
       .finally(() => {
-        // NEW: bersihkan state uploading setelah selesai (sukses maupun gagal)
         setUploadingFile(null)
       })
   }
@@ -200,11 +197,9 @@ export default function Documents() {
       })
   }
 
-  // Tampilan saat chatbot masih default
   if (isLocalChatbot) {
     return (
       <div className='relative flex flex-col gap-6 h-screen'>
-        {/* RESPONSIVE: padding header lebih kecil di mobile */}
         <div className='flex justify-between items-center border-b-2 border-t-2 border-[#d9d9d9] p-4 sm:p-7'>
           <div className='flex flex-col gap-1'>
             <h2 className='font-bold text-lg sm:text-xl'>Add documents</h2>
@@ -223,23 +218,19 @@ export default function Documents() {
 
   return (
     <div className='relative flex flex-col gap-6 h-screen'>
-      {/* RESPONSIVE: padding header lebih kecil di mobile, tombol Add new document menyesuaikan */}
       <div className='flex justify-between items-center border-b-2 border-t-2 border-[#d9d9d9] p-4 sm:p-7 gap-3'>
         <div className='flex flex-col gap-1 min-w-0'>
           <h2 className='font-bold text-lg sm:text-xl'>Add documents</h2>
-          {/* RESPONSIVE: subtitle disembunyikan di mobile sangat kecil agar tidak berdesakan */}
           <p className='font-semibold text-gray-500 text-sm sm:text-base hidden xs:block sm:block'>Your chatbot will answer questions based on these documents.</p>
         </div>
         {isUpload && 
           <>
             <input type="file" ref={fileUpload} className="hidden" accept='.pdf, .docx, .pptx, .xlsx' onChange={(e) => handleUpload(e.target.files[0])}/>
-            {/* RESPONSIVE: tombol lebih ringkas di mobile */}
             <div
               className='flex justify-center items-center border-2 border-[#d9d9d9] shrink-0 h-9 rounded-lg shadow-md hover:cursor-pointer hover:bg-gray-100 px-2 sm:w-46 sm:px-0 gap-1'
               onClick={handleFileUpload}
             >
               <img src="/plus.svg" alt="plus" width={25} height={25}/>
-              {/* RESPONSIVE: teks tombol disembunyikan di layar sangat kecil, hanya icon */}
               <p className='font-semibold text-[13px] sm:text-[15px] hidden sm:block'>Add new document</p>
             </div>
           </>
@@ -249,7 +240,6 @@ export default function Documents() {
         isUpload 
         ?
         <>
-          {/* RESPONSIVE: search bar padding menyesuaikan */}
           <div className='relative flex w-full px-3'>
             <img src="/search.svg" alt="search" width={35} height={35} className='absolute left-5 top-1/2 -translate-y-1/2 pointer-events-none'/>
             <input
@@ -262,7 +252,6 @@ export default function Documents() {
           </div>
 
           <div className='flex flex-col px-3'>
-            {/* NEW: item loading untuk file yang sedang diupload, tampil di paling atas list */}
             {uploadingFile && (
               <div className='relative flex flex-col gap-1.5 px-3 sm:px-6 mb-2 rounded-lg py-2.5 bg-gray-50'>
                 <div className='flex items-center gap-2.5 min-w-0'>
@@ -272,7 +261,6 @@ export default function Documents() {
                   <p className='text-sm sm:text-md font-semibold truncate max-w-[200px] sm:max-w-none text-gray-600'>{uploadingFile.name}</p>
                   <span className='text-xs text-gray-400 shrink-0 ml-auto'>{uploadingFile.progress}%</span>
                 </div>
-                {/* Progress bar horizontal */}
                 <div className='w-full h-1.5 bg-gray-200 rounded-full overflow-hidden'>
                   <div
                     className='h-full bg-[#27bb88] rounded-full transition-all duration-200 ease-out'
@@ -280,6 +268,13 @@ export default function Documents() {
                   ></div>
                 </div>
               </div>
+            )}
+            {/* Overlay untuk close menu saat klik di luar */}
+            {more && (
+              <div
+                className='fixed inset-0 z-40'
+                onClick={() => setMore(null)}
+              />
             )}
             {documents.map((doc) => (
               <div 
@@ -293,7 +288,6 @@ export default function Documents() {
                       <img src="/check.svg" alt="check" className="w-4 h-4"/>
                     )}
                   </div>
-                  {/* RESPONSIVE: nama file terpotong dengan ellipsis agar tidak mendorong tombol more */}
                   <p className="text-sm sm:text-md font-semibold truncate max-w-[160px] sm:max-w-none">{doc.filename}.{doc.file_type}</p>
                 </div>
                 {more == "" || more != doc.id ? 
@@ -322,7 +316,6 @@ export default function Documents() {
           </div>
 
           {documents.length > 0 && (
-            // RESPONSIVE: pagination wrap di mobile, padding dikurangi
             <div className='flex flex-wrap justify-center sm:justify-end items-center gap-2 pt-10 sm:pt-25 pb-6 sm:pb-10 px-4 sm:px-10'>
               <select
                 value={limit}
@@ -385,7 +378,6 @@ export default function Documents() {
         </div>
       }
       {preview && 
-        // RESPONSIVE: preview modal fixed, ukuran dibatasi agar tidak full layar di mobile
         <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 sm:p-6'>
           <div className='relative flex items-center justify-center w-[92vw] h-[75vh] sm:w-full sm:h-full sm:max-w-7xl sm:max-h-[95vh] bg-[#27bb88] border-4 rounded-3xl'>
             <img 
@@ -403,13 +395,21 @@ export default function Documents() {
               {previewLoading ? (
                 <p className='text-gray-500'>Loading preview...</p>
               ) : previewData ? (
-                previewData.file_type === 'pdf' ? (
-                  <iframe src={previewData.url} className="w-full h-full rounded-xl" title="preview"/>
-                ) : previewData.file_type === 'xlsx' ? (
-                  <iframe src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewData.url)}`} className="w-full h-full rounded-xl" title="preview"/>
-                ) : (
-                  <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewData.url)}&embedded=true`} className="w-full h-full rounded-xl" title="preview"/>
-                )
+                <div className="relative w-full h-full">
+                  <iframe
+                    src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewData.url)}&embedded=true`}
+                    className="w-full h-full rounded-xl"
+                    title="preview"
+                  />
+                  <a
+                    href={previewData.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="absolute bottom-3 right-3 bg-white border border-gray-300 text-sm px-3 py-1.5 rounded-lg shadow hover:bg-gray-50"
+                  >
+                    Open in new tab
+                  </a>
+                </div>
               ) : (
                 <p className='text-gray-500'>No preview available</p>
               )}
