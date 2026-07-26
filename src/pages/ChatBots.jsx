@@ -214,7 +214,7 @@ export default function ChatBots() {
           <p className='font-bold text-[#5a5959] text-lg sm:text-xl'>Name</p>
           {chatbotdata != null && !isEdit
             ?
-            <p className='flex items-center text-md font-semibold w-full h-10 border-2 border-[#d9d9d9] p-3 rounded-lg'>{chatbotdata.name}</p>
+            <p className='flex items-center text-md font-semibold w-full h-10 border-2 border-[#d9d9d9] p-3 rounded-lg overflow-hidden text-ellipsis whitespace-nowrap'>{chatbotdata.name}</p>
             :
             <input type="text" value={name} className='w-full h-10 border-2 border-[#d9d9d9] p-3 rounded-lg' onChange={(e) => setName(e.target.value)}/>
           }
@@ -225,7 +225,9 @@ export default function ChatBots() {
         <div>
           {chatbotdata != null && !isEdit
             ?
-            <p className='w-full h-60 border-2 border-[#d9d9d9] p-2 rounded-lg text-md font-semibold'>{chatbotdata.prompt}</p>
+            <div className='w-full h-60 overflow-y-auto border-2 border-[#d9d9d9] p-2 rounded-lg text-md font-semibold whitespace-pre-wrap break-words'>
+              {chatbotdata.prompt}
+            </div>
             :
             <textarea name="desc" id="desc" value={prompt} className='w-full h-60 border-2 border-[#d9d9d9] p-2 rounded-lg' onChange={(e) => setPrompt(e.target.value)}/>
           }
