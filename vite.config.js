@@ -8,6 +8,6 @@ export default defineConfig({
     tailwindcss(),
   ],
   build: {
-    minify: 'esbuild',  // ← built-in, tidak perlu install apapun
+    minify: 'oxc',  // default minifier di Vite v8, tidak perlu install apapun
   }
 })
