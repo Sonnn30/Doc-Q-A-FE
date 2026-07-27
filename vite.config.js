@@ -7,4 +7,16 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  build: {
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,   // hapus semua console.log saat build
+        drop_debugger: true,  // hapus semua debugger statement
+      },
+      format: {
+        comments: false,      // hapus semua komentar dari output build
+      }
+    }
+  }
 })

@@ -1,5 +1,5 @@
 import axios from 'axios'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { useNavigate, useLocation } from 'react-router-dom'
 
@@ -12,6 +12,11 @@ export default function ChangePassword() {
   const [isHideC, setHideC] = useState(true)
   const [password, setPassword] = useState("")
   const [confirmedPassword, setConfirmedPassword] = useState("")
+  useEffect(() => {
+    if (!email) {
+      navigate("/login")
+    }
+  }, [email, navigate])
 
   const handleChangePassword = () => {
     if (!password || !confirmedPassword) {
